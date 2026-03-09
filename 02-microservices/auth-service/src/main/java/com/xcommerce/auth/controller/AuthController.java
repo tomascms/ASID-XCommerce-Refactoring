@@ -1,4 +1,4 @@
-package com.xcommerce.auth;
+package com.xcommerce.auth.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.xcommerce.auth.dto.LoginRequest;
 import com.xcommerce.auth.dto.LoginResponse;
+import com.xcommerce.auth.service.TokenService;
 
 @RestController
 @RequestMapping("/auth")

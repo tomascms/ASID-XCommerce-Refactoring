@@ -1,4 +1,4 @@
-package com.xcommerce.auth;
+package com.xcommerce.auth.config;
 
 import com.xcommerce.auth.model.User;
 import com.xcommerce.auth.repository.UserRepository;

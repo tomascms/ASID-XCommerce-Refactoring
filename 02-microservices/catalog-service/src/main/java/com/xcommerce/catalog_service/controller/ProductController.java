@@ -56,4 +56,12 @@ public class ProductController {
             return ResponseEntity.noContent().<Void>build();
         }).orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/{id}/price")
+    public java.math.BigDecimal getProductPrice(@PathVariable Long id) {
+        // Procura o produto na BD e devolve o preço
+        return repository.findById(id)
+                .map(Product::getPrice)
+                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
+    }
 }

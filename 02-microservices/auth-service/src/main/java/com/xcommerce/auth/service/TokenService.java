@@ -1,4 +1,4 @@
-package com.xcommerce.auth;
+package com.xcommerce.auth.service;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
