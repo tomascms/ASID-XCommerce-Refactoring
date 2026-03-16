@@ -19,9 +19,11 @@ public class AuthenticationFilter implements GlobalFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
+        System.out.println("AuthenticationFilter path=" + path + " method=" + exchange.getRequest().getMethod());
 
         // 1. Exceções (Acesso livre)
-        if (path.contains("/auth") || (path.contains("/products") && exchange.getRequest().getMethod().name().equals("GET"))) {
+        if (path.contains("/v3/api-docs") || path.contains("/swagger-ui") || path.contains("/webjars") || path.contains("/auth") || (path.contains("/products") && exchange.getRequest().getMethod().name().equals("GET"))) {
+            System.out.println("AuthenticationFilter allow path=" + path);
             return chain.filter(exchange);
         }
 
