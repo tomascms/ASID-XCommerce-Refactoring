@@ -27,7 +27,6 @@ public class TokenService {
     }
 
     private Instant genExpirationDate() {
-        // Token expira em 2 horas
         return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-01:00"));
     }
 }

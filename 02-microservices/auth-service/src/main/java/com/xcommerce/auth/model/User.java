@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "users_micro") // Nome diferente para não chocar com o monólito
+@Table(name = "users_micro")
 @Data
 public class User {
     @Id

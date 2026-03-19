@@ -18,50 +18,41 @@ public class AuthenticationFilter implements GlobalFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        String path = exchange.getRequest().getURI().getPath();
-        System.out.println("AuthenticationFilter path=" + path + " method=" + exchange.getRequest().getMethod());
+        String path = exchange.getRequest().getURI().getPath().toLowerCase();
+        String method = exchange.getRequest().getMethod().name();
 
-        // 1. Exceções (Acesso livre)
-        if (path.contains("/v3/api-docs") || path.contains("/swagger-ui") || path.contains("/webjars") || path.contains("/auth") || (path.contains("/products") && exchange.getRequest().getMethod().name().equals("GET"))) {
-            System.out.println("AuthenticationFilter allow path=" + path);
+        // 1. LISTA BRANCA DEFINITIVA (Ignora Token para Auth e GET Products)
+        if (path.contains("/auth") || 
+            path.contains("/login") || 
+            path.contains("/register") || 
+            path.contains("/v3/api-docs") || 
+            path.contains("/swagger-ui") || 
+            (path.contains("/products") && method.equals("GET"))) {
             return chain.filter(exchange);
         }
 
-        // 2. Pegar o Token
+        // 2. VERIFICAÇÃO DE HEADER
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return onError(exchange, HttpStatus.UNAUTHORIZED);
         }
 
-        String token = authHeader.substring(7);
-
         try {
-            // 3. Validar e extrair o username
-            String username = validateTokenAndGetUsername(token);
-
-            // 4. Injetar o header para o Cart Service
-            // No WebFlux usamos o mutate() no request desta forma:
+            String token = authHeader.substring(7);
+            Algorithm algorithm = Algorithm.HMAC256(secret);
+            DecodedJWT jwt = JWT.require(algorithm).withIssuer("auth-api").build().verify(token);
+            
+            // Injetar o username para que os outros serviços saibam quem é o user
             ServerWebExchange modifiedExchange = exchange.mutate()
                 .request(exchange.getRequest().mutate()
-                    .header("X-User-Name", username)
+                    .header("X-User-Name", jwt.getSubject())
                     .build())
                 .build();
 
             return chain.filter(modifiedExchange);
-
         } catch (Exception e) {
             return onError(exchange, HttpStatus.UNAUTHORIZED);
         }
-    }
-
-    // MÉTODO QUE FALTAVA: Validação real do JWT
-    private String validateTokenAndGetUsername(String token) {
-        Algorithm algorithm = Algorithm.HMAC256(secret);
-        DecodedJWT jwt = JWT.require(algorithm)
-                .withIssuer("auth-api") // Certifica-te que o Auth Service usa o mesmo Issuer
-                .build()
-                .verify(token);
-        return jwt.getSubject();
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, HttpStatus status) {

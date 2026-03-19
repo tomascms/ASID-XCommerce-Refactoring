@@ -10,7 +10,6 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
 
-    // O Spring injeta o repositório aqui automaticamente
     public DataInitializer(UserRepository userRepository) {
         this.userRepository = userRepository;
     }

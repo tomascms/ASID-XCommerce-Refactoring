@@ -17,7 +17,6 @@ public class CartItem {
 
     public CartItem() {}
 
-    // Getters e Setters manuais (evita problemas de compilação do Lombok)
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getUsername() { return username; }
