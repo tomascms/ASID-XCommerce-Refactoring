@@ -1,62 +1,97 @@
 package com.xcommerce.order_service.service;
 
-import com.xcommerce.order_service.client.CartClient;
-import com.xcommerce.order_service.client.InventoryClient; // Importa o novo cliente
 import com.xcommerce.order_service.dto.CartItemDTO;
+import com.xcommerce.order_service.dto.CreateOrderRequest;
 import com.xcommerce.order_service.model.Order;
 import com.xcommerce.order_service.model.OrderItem;
+import com.xcommerce.order_service.model.OrderStatus;
 import com.xcommerce.order_service.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // Importante para rollback se algo falhar
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class OrderService {
     @Autowired private OrderRepository repository;
-    @Autowired private CartClient cartClient;
-    @Autowired private InventoryClient inventoryClient; // Injetar o Inventory
+    @Autowired private OrderRemoteService orderRemoteService;
+    @Autowired private OrderProducer orderProducer;
 
-    @Transactional // Se o abate de stock falhar, a encomenda não é guardada
+    @Transactional
     public Order createOrder(String username) {
-        // 1. Obter itens do carrinho
-        List<CartItemDTO> cartItems = cartClient.getCartItems(username);
-        if(cartItems.isEmpty()) throw new RuntimeException("Carrinho vazio!");
+        List<CartItemDTO> cartItems = orderRemoteService.getCartItems(username);
+        if (cartItems.isEmpty()) {
+            throw new RuntimeException("Carrinho vazio!");
+        }
 
-        // 2. VALIDAR STOCK de todos os itens antes de fazer qualquer coisa
-        for (CartItemDTO item : cartItems) {
-            boolean hasStock = inventoryClient.checkStock(item.getProductId(), item.getQuantity());
+        List<CreateOrderRequest> requests = cartItems.stream().map(item -> {
+            CreateOrderRequest request = new CreateOrderRequest();
+            request.setUsername(username);
+            request.setProductId(item.getProductId());
+            request.setQuantity(item.getQuantity());
+            return request;
+        }).toList();
+
+        Order savedOrder = buildAndPersistOrder(username, requests);
+        orderRemoteService.clearCart(username);
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order createDirectOrder(String fallbackUsername, CreateOrderRequest request) {
+        String username = request.getUsername() != null && !request.getUsername().isBlank() ? request.getUsername() : fallbackUsername;
+        if (username == null || username.isBlank()) {
+            throw new RuntimeException("Username obrigatorio.");
+        }
+        return buildAndPersistOrder(username, List.of(request));
+    }
+
+    public List<Order> getOrdersByCustomer(String username) {
+        return repository.findByUsernameOrderByOrderDateDesc(username);
+    }
+
+    public Order updateOrderStatus(Long orderId, OrderStatus newStatus) {
+        Order order = repository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
+        order.setStatus(newStatus);
+        return repository.save(order);
+    }
+
+    private Order buildAndPersistOrder(String username, List<CreateOrderRequest> requests) {
+        for (CreateOrderRequest request : requests) {
+            boolean hasStock = orderRemoteService.checkStock(request.getProductId(), request.getQuantity());
             if (!hasStock) {
-                throw new RuntimeException("Stock insuficiente para o produto ID: " + item.getProductId());
+                throw new RuntimeException("Stock insuficiente para o produto ID: " + request.getProductId());
             }
         }
 
-        // 3. Criar a Encomenda
         Order order = new Order();
         order.setUsername(username);
         order.setOrderDate(LocalDateTime.now());
-        
-        List<OrderItem> items = cartItems.stream().map(c -> {
-            OrderItem i = new OrderItem();
-            i.setProductId(c.getProductId());
-            i.setQuantity(c.getQuantity());
-            i.setPrice(25.0); // No futuro: ir buscar ao Catalog Service
-            return i;
+        order.setStatus(OrderStatus.HANDLING);
+
+        List<OrderItem> items = requests.stream().map(request -> {
+            OrderItem item = new OrderItem();
+            item.setProductId(request.getProductId());
+            item.setQuantity(request.getQuantity());
+            BigDecimal productPrice = orderRemoteService.getProductPrice(request.getProductId());
+            item.setPrice(productPrice.doubleValue());
+            return item;
         }).toList();
 
         order.setItems(items);
-        order.setTotalAmount(items.stream().mapToDouble(i -> i.getPrice() * i.getQuantity()).sum());
+        order.setProductId(requests.getFirst().getProductId());
+        order.setQuantity(requests.stream().mapToInt(CreateOrderRequest::getQuantity).sum());
+        order.setTotalAmount(items.stream().mapToDouble(item -> item.getPrice() * item.getQuantity()).sum());
 
-        // 4. ABATER STOCK no Inventory Service
-        for (CartItemDTO item : cartItems) {
-            inventoryClient.decreaseStock(item.getProductId(), item.getQuantity());
+        for (CreateOrderRequest request : requests) {
+            orderRemoteService.decreaseStock(request.getProductId(), request.getQuantity());
         }
 
-        // 5. Guardar encomenda e Limpar carrinho
         Order savedOrder = repository.save(order);
-        cartClient.clearCart(username); 
-        
+        orderProducer.sendOrderEvents(savedOrder.getUsername(), savedOrder.getProductId(), savedOrder.getQuantity());
         return savedOrder;
     }
 }

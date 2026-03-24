@@ -1,6 +1,5 @@
-version: '3.8'
-
 services:
+  # --- INFRAESTRUTURA BASE ---
   db:
     image: postgres:15-alpine
     container_name: xcommerce-db
@@ -59,10 +58,48 @@ services:
     networks:
       - xcommerce-network
 
+  # --- OBSERVABILIDADE ---
+  kafdrop:
+    image: obsidiandynamics/kafdrop:latest
+    container_name: xcommerce-kafdrop
+    depends_on: [kafka]
+    ports: ["9001:9000"]
+    environment:
+      KAFKA_BROKERCONNECT: "kafka:29092"
+    networks: [xcommerce-network]
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: xcommerce-jaeger
+    ports: ["16686:16686", "4317:4317", "4318:4318"]
+    networks: [xcommerce-network]
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: xcommerce-prometheus
+    volumes: ["./prometheus.yml:/etc/prometheus/prometheus.yml"]
+    ports: ["9090:9090"]
+    networks: [xcommerce-network]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: xcommerce-grafana
+    ports: ["3000:3000"]
+    depends_on: [prometheus]
+    networks: [xcommerce-network]
+
   # --- MICROSERVIÇOS ---
   auth-service:
     build: ./auth-service
     container_name: auth-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     depends_on:
       db: { condition: service_healthy }
       kafka: { condition: service_healthy }
@@ -71,6 +108,14 @@ services:
   catalog-service:
     build: ./catalog-service
     container_name: catalog-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     depends_on:
       db: { condition: service_healthy }
       kafka: { condition: service_healthy }
@@ -79,6 +124,13 @@ services:
   inventory-service:
     build: ./inventory-service
     container_name: inventory-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     depends_on:
       db: { condition: service_healthy }
     networks: [xcommerce-network]
@@ -86,6 +138,13 @@ services:
   cart-service:
     build: ./cart-service
     container_name: cart-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     depends_on:
       db: { condition: service_healthy }
     networks: [xcommerce-network]
@@ -93,6 +152,13 @@ services:
   order-service:
     build: ./order-service
     container_name: order-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     depends_on:
       db: { condition: service_healthy }
       kafka: { condition: service_healthy }
@@ -101,6 +167,13 @@ services:
   user-service:
     build: ./user-service
     container_name: user-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8086/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     depends_on:
       db: { condition: service_healthy }
     networks: [xcommerce-network]
@@ -108,6 +181,13 @@ services:
   payment-service:
     build: ./payment-service
     container_name: payment-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8087/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     depends_on:
       kafka: { condition: service_healthy }
     networks: [xcommerce-network]
@@ -115,6 +195,13 @@ services:
   notification-service:
     build: ./notification-service
     container_name: notification-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8088/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     depends_on:
       kafka: { condition: service_healthy }
     networks: [xcommerce-network]
@@ -123,34 +210,22 @@ services:
     build: ./api-gateway
     container_name: gateway
     ports: ["9000:9000"]
-    depends_on:
-      auth-service: { condition: service_started }
-    networks: [xcommerce-network]
     environment:
-      # CONFIGURAÇÃO DE ROTAS (Substitui o application.yml interno)
-      - SPRING_CLOUD_GATEWAY_ROUTES_0_ID=auth-service
-      - SPRING_CLOUD_GATEWAY_ROUTES_0_URI=http://auth-service:8081
-      - SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0=Path=/auth/**
-      
-      - SPRING_CLOUD_GATEWAY_ROUTES_1_ID=catalog-service
-      - SPRING_CLOUD_GATEWAY_ROUTES_1_URI=http://catalog-service:8082
-      - SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0=Path=/products/**
-
-      - SPRING_CLOUD_GATEWAY_ROUTES_2_ID=cart-service
-      - SPRING_CLOUD_GATEWAY_ROUTES_2_URI=http://cart-service:8083
-      - SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0=Path=/cart/**
-
-      - SPRING_CLOUD_GATEWAY_ROUTES_3_ID=order-service
-      - SPRING_CLOUD_GATEWAY_ROUTES_3_URI=http://order-service:8084
-      - SPRING_CLOUD_GATEWAY_ROUTES_3_PREDICATES_0=Path=/order/**
-
-      - SPRING_CLOUD_GATEWAY_ROUTES_4_ID=user-service
-      - SPRING_CLOUD_GATEWAY_ROUTES_4_URI=http://user-service:8086
-      - SPRING_CLOUD_GATEWAY_ROUTES_4_PREDICATES_0=Path=/users/**
-
-      - SPRING_CLOUD_GATEWAY_ROUTES_5_ID=inventory-service
-      - SPRING_CLOUD_GATEWAY_ROUTES_5_URI=http://inventory-service:8085
-      - SPRING_CLOUD_GATEWAY_ROUTES_5_PREDICATES_0=Path=/inventory/**
+      - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9000/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      auth-service: { condition: service_healthy }
+      catalog-service: { condition: service_healthy }
+      cart-service: { condition: service_healthy }
+      order-service: { condition: service_healthy }
+      inventory-service: { condition: service_healthy }
+      user-service: { condition: service_healthy }
+    networks: [xcommerce-network]
 
 networks:
   xcommerce-network:

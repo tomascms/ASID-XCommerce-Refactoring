@@ -13,12 +13,13 @@ public class TokenService {
     
     private final String secret = "my-secret-key";
 
-    public String generateToken(String username) {
+    public String generateToken(String username, String role) {
         try {
             Algorithm algorithm = Algorithm.HMAC256(secret);
             return JWT.create()
                     .withIssuer("auth-api")
                     .withSubject(username)
+                    .withClaim("role", role)
                     .withExpiresAt(genExpirationDate())
                     .sign(algorithm);
         } catch (JWTCreationException exception) {

@@ -1,5 +1,6 @@
 HELP.md
 target/
+BOOT-INF/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

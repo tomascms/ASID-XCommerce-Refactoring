@@ -1,4 +1,16 @@
-FROM eclipse-temurin:21-jdk-alpine
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS build
+WORKDIR /workspace
+
+COPY .mvn .mvn
+COPY mvnw .
+COPY mvnw.cmd .
+COPY pom.xml .
+COPY src src
+
+RUN chmod +x mvnw && ./mvnw -q -DskipTests package
+
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /
 VOLUME /tmp
-COPY target/*.jar app.jar
+COPY --from=build /workspace/target/*.jar app.jar
 ENTRYPOINT ["java","-jar","/app.jar"]

@@ -13,24 +13,21 @@ public class InventoryConsumer {
     @Autowired
     private InventoryRepository repository;
 
-    // 1. Ouvir o Catalog para criar stock inicial
     @Transactional
     @KafkaListener(topics = "product-events", groupId = "inventory-group")
-    public void handleProductCreated(String productId) {
-        System.out.println("📦 Kafka [Inventory]: Novo produto detetado. Criando registo de stock para ID: " + productId);
-        
-        Long pId = Long.parseLong(productId);
-        
-        if (!repository.existsByProductId(pId)) {
-            Inventory stock = new Inventory();
-            stock.setProductId(pId);
-            stock.setQuantity(0);
-            repository.save(stock);
-            System.out.println("✅ Stock inicializado para o produto " + pId);
-        }
+    public void handleProductCreated(String payload) {
+        String[] parts = payload.split(":");
+        Long productId = Long.parseLong(parts[0]);
+        Integer quantity = parts.length > 1 ? Integer.parseInt(parts[1]) : 0;
+
+        System.out.println("Kafka [Inventory]: Novo produto detetado. Stock inicial para ID " + productId + ": " + quantity);
+
+        Inventory stock = repository.findByProductId(productId).orElseGet(Inventory::new);
+        stock.setProductId(productId);
+        stock.setQuantity(quantity);
+        repository.save(stock);
     }
 
-    // 2. Ouvir o Order para abater stock
     @Transactional
     @KafkaListener(topics = "order-placed-events", groupId = "inventory-group")
     public void handleOrderPlaced(String message) {
@@ -42,10 +39,10 @@ public class InventoryConsumer {
             repository.findByProductId(productId).ifPresent(inventory -> {
                 inventory.setQuantity(inventory.getQuantity() - quantityToReduce);
                 repository.save(inventory);
-                System.out.println("📉 Stock reduzido para o produto " + productId + ". Nova quantidade: " + inventory.getQuantity());
+                System.out.println("Kafka [Inventory]: Stock reduzido para o produto " + productId + ". Nova quantidade: " + inventory.getQuantity());
             });
         } catch (Exception e) {
-            System.err.println("❌ Erro ao processar redução de stock: " + e.getMessage());
+            System.err.println("Erro ao processar reducao de stock: " + e.getMessage());
         }
     }
 }

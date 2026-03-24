@@ -8,26 +8,35 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class InventoryService {
-    @Autowired 
+
+    @Autowired
     private InventoryRepository repository;
 
     @Transactional(readOnly = true)
     public boolean isInStock(Long productId, Integer quantity) {
         return repository.findByProductId(productId)
-                .map(inv -> inv.getQuantity() >= quantity)
-                .orElse(false);
+            .map(inv -> inv.getQuantity() >= quantity)
+            .orElse(false);
     }
 
     @Transactional
     public void decreaseStock(Long productId, Integer quantity) {
-        Inventory inv = repository.findByProductId(productId)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado"));
-        
-        if (inv.getQuantity() < quantity) {
+        Inventory inventory = repository.findByProductId(productId)
+            .orElseThrow(() -> new RuntimeException("Produto nao encontrado"));
+
+        if (inventory.getQuantity() < quantity) {
             throw new RuntimeException("Stock insuficiente");
         }
-        
-        inv.setQuantity(inv.getQuantity() - quantity);
-        repository.save(inv);
+
+        inventory.setQuantity(inventory.getQuantity() - quantity);
+        repository.save(inventory);
+    }
+
+    @Transactional
+    public Inventory syncStock(Long productId, Integer quantity) {
+        Inventory inventory = repository.findByProductId(productId).orElseGet(Inventory::new);
+        inventory.setProductId(productId);
+        inventory.setQuantity(quantity);
+        return repository.save(inventory);
     }
 }

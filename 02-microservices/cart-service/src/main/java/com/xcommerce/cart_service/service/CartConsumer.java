@@ -1,4 +1,4 @@
-package com.xcommerce.cart.service;
+package com.xcommerce.cart_service.service;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;

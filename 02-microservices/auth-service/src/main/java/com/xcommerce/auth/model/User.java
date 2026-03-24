@@ -1,5 +1,6 @@
 package com.xcommerce.auth.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -12,8 +13,14 @@ public class User {
     private Long id;
 
     @Column(unique = true)
+    private String username;
+
+    @Column(unique = true)
     private String email;
-    
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
+
     private String role;
+    private Boolean active = Boolean.TRUE;
 }
