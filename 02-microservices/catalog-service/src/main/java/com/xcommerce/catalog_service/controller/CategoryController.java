@@ -6,6 +6,7 @@ import com.xcommerce.catalog_service.repository.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,38 +19,44 @@ public class CategoryController {
     private CategoryRepository repository;
 
     @GetMapping
-    public List<Category> getAll() {
-        return repository.findAll();
+    public List<com.xcommerce.catalog_service.dto.CategoryResponse> getAll() {
+        return repository.findAll().stream().map(com.xcommerce.catalog_service.dto.CategoryResponse::from).toList();
     }
 
     @PostMapping
-    public ResponseEntity<Category> create(@RequestBody CategoryRequest request) {
+    @Transactional
+    public ResponseEntity<com.xcommerce.catalog_service.dto.CategoryResponse> create(@RequestBody CategoryRequest request) {
         Category category = new Category();
         category.setName(request.getName());
         category.setParentCategory(resolveParent(request.getParentCategoryId()));
         if (request.getActive() != null) {
             category.setActive(request.getActive());
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(repository.save(category));
+        Category saved = repository.save(category);
+        return ResponseEntity.status(HttpStatus.CREATED).body(com.xcommerce.catalog_service.dto.CategoryResponse.from(saved));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Category> update(@PathVariable Long id, @RequestBody CategoryRequest data) {
+    @Transactional
+    public ResponseEntity<com.xcommerce.catalog_service.dto.CategoryResponse> update(@PathVariable Long id, @RequestBody CategoryRequest data) {
         return repository.findById(id).map(category -> {
             category.setName(data.getName());
             category.setParentCategory(resolveParent(data.getParentCategoryId()));
             if (data.getActive() != null) {
                 category.setActive(data.getActive());
             }
-            return ResponseEntity.ok(repository.save(category));
+            Category updated = repository.save(category);
+            return ResponseEntity.ok(com.xcommerce.catalog_service.dto.CategoryResponse.from(updated));
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @PatchMapping("/{id}/deactivate")
-    public ResponseEntity<Category> deactivate(@PathVariable Long id) {
+    @Transactional
+    public ResponseEntity<com.xcommerce.catalog_service.dto.CategoryResponse> deactivate(@PathVariable Long id) {
         return repository.findById(id).map(category -> {
             category.setActive(false);
-            return ResponseEntity.ok(repository.save(category));
+            Category updated = repository.save(category);
+            return ResponseEntity.ok(com.xcommerce.catalog_service.dto.CategoryResponse.from(updated));
         }).orElse(ResponseEntity.notFound().build());
     }
 

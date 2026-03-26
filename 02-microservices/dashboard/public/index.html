@@ -1,0 +1,2339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XCommerce Dashboard - Gaming Peripherals</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #00d4ff;
+            --primary-dark: #0099cc;
+            --secondary: #ff00ff;
+            --accent: #00ff88;
+            --dark-bg: #0a0e27;
+            --card-bg: #1a1f3a;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b8c8;
+            --success: #00ff88;
+            --danger: #ff3366;
+            --warning: #ffa500;
+            --info: #00d4ff;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1f3a 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .login-container {
+            background: rgba(26, 31, 58, 0.8);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 30px rgba(0, 212, 255, 0.1);
+            padding: 40px;
+            max-width: 450px;
+            width: 90%;
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 10;
+        }
+
+        .login-container h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 32px;
+            font-weight: 800;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .login-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .login-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .login-tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: all 0.3s;
+        }
+
+        .login-tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .login-form { display: none; }
+        .login-form.active { display: block; animation: fadeIn 0.3s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-primary);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--info) 100%);
+            color: var(--dark-bg);
+            width: 100%;
+            margin-top: 10px;
+            font-weight: 700;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 212, 255, 0.4);
+        }
+
+        .demo-accounts {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .container {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            flex-direction: column;
+            position: relative;
+            z-index: 5;
+        }
+
+        .container.active {
+            display: flex;
+        }
+
+        .header {
+            background: rgba(26, 31, 58, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .header h1 {
+            color: var(--primary);
+            font-size: 24px;
+            font-weight: 800;
+            text-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+        }
+
+        .header-right {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .user-info {
+            color: var(--text-secondary);
+            font-size: 14px;
+            padding: 8px 16px;
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .logout-btn {
+            background: linear-gradient(135deg, var(--danger) 0%, #ff0055 100%);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 51, 102, 0.4);
+        }
+
+        .tabs {
+            background: rgba(26, 31, 58, 0.7);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            display: flex;
+            gap: 0;
+            overflow-x: auto;
+            padding: 0 20px;
+        }
+
+        .tab-btn {
+            flex: 0 0 auto;
+            padding: 16px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: all 0.3s;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .tab-btn:hover {
+            color: var(--primary);
+        }
+
+        .content-area {
+            flex: 1;
+            overflow: auto;
+            background: linear-gradient(135deg, var(--dark-bg) 0%, #1a1f3a 100%);
+            padding: 30px;
+        }
+
+        .content {
+            display: none;
+        }
+
+        .content.active {
+            display: block;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 25px;
+            text-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .form-section {
+            background: rgba(26, 31, 58, 0.8);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-section h3 {
+            margin-bottom: 20px;
+            color: var(--primary);
+            font-size: 18px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            padding-bottom: 12px;
+        }
+
+        .form-section h4 {
+            margin-bottom: 15px;
+            color: var(--accent);
+            font-size: 15px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-primary);
+            transition: all 0.3s;
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .inline-group {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .inline-group > * {
+            flex: 1;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-small {
+            padding: 8px 14px;
+            font-size: 12px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--info) 100%);
+            color: var(--dark-bg);
+            font-weight: 700;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, #00dd77 100%);
+            color: var(--dark-bg);
+            font-weight: 600;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #ff0055 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 51, 102, 0.4);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, var(--info) 0%, var(--primary) 100%);
+            color: var(--dark-bg);
+            font-weight: 600;
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning) 0%, #ff8800 100%);
+            color: var(--dark-bg);
+            font-weight: 600;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 165, 0, 0.4);
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+            border-left: 4px solid transparent;
+            animation: slideDown 0.3s;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert.success {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--success);
+            border-left-color: var(--success);
+            display: block;
+        }
+
+        .alert.error {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--danger);
+            border-left-color: var(--danger);
+            display: block;
+        }
+
+        .table-container {
+            background: rgba(26, 31, 58, 0.8);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            margin-bottom: 25px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: rgba(0, 212, 255, 0.05);
+            padding: 14px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--primary);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        td {
+            padding: 14px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.05);
+            color: var(--text-secondary);
+        }
+
+        tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pending_payment { background: rgba(255, 165, 0, 0.2); color: var(--warning); }
+        .status-paid { background: rgba(0, 255, 136, 0.2); color: var(--success); }
+        .status-shipped { background: rgba(0, 212, 255, 0.2); color: var(--info); }
+        .status-delivered { background: rgba(102, 255, 204, 0.2); color: #66ffcc; }
+        .status-cancelled { background: rgba(255, 51, 102, 0.2); color: var(--danger); }
+        .status-refunded { background: rgba(204, 102, 255, 0.2); color: #cc66ff; }
+
+        .item-chip {
+            display: inline-block;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            margin: 6px 6px 6px 0;
+            position: relative;
+            padding-right: 30px;
+            color: var(--primary);
+            animation: fadeIn 0.3s;
+        }
+
+        .item-chip .delete-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-weight: bold;
+            padding: 0;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .item-chip .delete-btn:hover {
+            color: var(--primary);
+            transform: translateY(-50%) scale(1.2);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(26, 31, 58, 0.95);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 212, 255, 0.1);
+            position: relative;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-content h3 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .modal-content p {
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-modal:hover {
+            color: var(--danger);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 212, 255, 0.5);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .success-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .inline-group {
+                flex-direction: column;
+            }
+
+            .inline-group > * {
+                width: 100%;
+            }
+
+            .tabs {
+                padding: 0;
+                overflow-x: auto;
+            }
+
+            .tab-btn {
+                flex: 0 0 auto;
+                padding: 14px 16px;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .header-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .content-area {
+                padding: 15px;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+        }
+    </style>
+        }
+    </style>
+</head>
+<body>
+    <!-- LOGIN -->
+    <div id="loginContainer" class="login-container">
+        <h1>🎮 XCommerce</h1>
+        <div class="login-subtitle">Gaming Peripherals Store</div>
+        <div class="login-tabs">
+            <button class="login-tab-btn active" onclick="switchLoginTab('login', event)">Login</button>
+            <button class="login-tab-btn" onclick="switchLoginTab('signup', event)">Signup</button>
+        </div>
+
+        <div id="loginForm" class="login-form active">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="loginEmail" placeholder="example@email.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword">
+            </div>
+            <button class="btn btn-primary" onclick="handleLogin()">Login</button>
+            <div class="demo-accounts">
+                <strong>Demo Accounts:</strong><br>
+                Admin: admin@xcommerce.com / 123456<br>
+                User: demo@xcommerce.com / demo123
+            </div>
+        </div>
+
+        <div id="signupForm" class="login-form">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="signupEmail">
+            </div>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="signupName">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="signupPassword">
+            </div>
+            <button class="btn btn-primary" onclick="handleSignup()">Create Account</button>
+        </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="adminContainer" class="container">
+        <div class="header">
+            <h1>👨‍💼 Admin Panel</h1>
+            <div class="header-right">
+                <span>Welcome, <strong id="adminName">Admin</strong></span>
+                <button class="logout-btn" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchAdminTab('dashboard', event)">Dashboard</button>
+            <button class="tab-btn" onclick="switchAdminTab('management', event)">Management</button>
+            <button class="tab-btn" onclick="switchAdminTab('products', event)">Products</button>
+            <button class="tab-btn" onclick="switchAdminTab('users', event)">Users</button>
+            <button class="tab-btn" onclick="switchAdminTab('orders', event)">Orders</button>
+            <button class="tab-btn" onclick="switchAdminTab('apis', event)">🔗 APIs</button>
+        </div>
+
+        <div class="content-area">
+            <!-- DASHBOARD -->
+            <div id="adminDashboard" class="content active">
+                <h2 class="section-title">📊 System Overview</h2>
+                <div class="form-row">
+                    <div class="form-section">
+                        <div style="font-size: 14px; color: #999;">Total Products</div>
+                        <div id="statProducts" style="font-size: 32px; font-weight: bold; color: #667eea;">0</div>
+                    </div>
+                    <div class="form-section">
+                        <div style="font-size: 14px; color: #999;">Total Users</div>
+                        <div id="statUsers" style="font-size: 32px; font-weight: bold; color: #764ba2;">0</div>
+                    </div>
+                    <div class="form-section">
+                        <div style="font-size: 14px; color: #999;">Total Orders</div>
+                        <div id="statOrders" style="font-size: 32px; font-weight: bold; color: #ffc107;">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MANAGEMENT -->
+            <div id="adminManagement" class="content">
+                <h2 class="section-title">⚙️ Brands & Categories Management</h2>
+                <div id="alertManagement" class="alert"></div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                    <!-- BRANDS SECTION -->
+                    <div class="form-section">
+                        <h3>🏷️ Brands</h3>
+                        <div class="inline-group" style="margin-bottom: 15px;">
+                            <input type="text" id="newBrandName" placeholder="New brand name">
+                            <button class="btn btn-success" onclick="saveBrand()" style="width: auto;">Add Brand</button>
+                        </div>
+                        <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                            <table style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 70%;">Name</th>
+                                        <th style="width: 30%;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="brandsList">
+                                    <tr><td colspan="2" class="no-data">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- CATEGORIES SECTION -->
+                    <div class="form-section">
+                        <h3>📁 Categories</h3>
+                        <div class="inline-group" style="margin-bottom: 15px;">
+                            <input type="text" id="newCategoryName" placeholder="New category name">
+                            <button class="btn btn-success" onclick="saveCategory()" style="width: auto;">Add Category</button>
+                        </div>
+                        <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                            <table style="width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 70%;">Name</th>
+                                        <th style="width: 30%;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categoriesList">
+                                    <tr><td colspan="2" class="no-data">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PRODUCTS -->
+            <div id="adminProducts" class="content">
+                <h2 class="section-title">🖱️ Product Management</h2>
+                <div id="alertProducts" class="alert"></div>
+
+                <div class="form-section">
+                    <h3>Add New Product</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Product Name</label>
+                            <input type="text" id="productName" placeholder="e.g., Alloy Elite RGB">
+                        </div>
+                        <div class="form-group">
+                            <label>Brand *</label>
+                            <select id="productBrand">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Category *</label>
+                            <select id="productCategory">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Price</label>
+                            <input type="number" id="productPrice" placeholder="99.99" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <input type="text" id="productDesc" placeholder="Product details">
+                        </div>
+                        <div class="form-group">
+                            <label>Quantity</label>
+                            <input type="number" id="productQty" placeholder="100" value="100">
+                        </div>
+                    </div>
+                    <button class="btn btn-success" onclick="addProduct()">Add Product (SKU Auto)</button>
+                </div>
+
+                <h3>Products List</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Name</th>
+                                <th>Brand</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsList">
+                            <tr><td colspan="7" class="no-data">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- USERS -->
+            <div id="adminUsers" class="content">
+                <h2 class="section-title">👥 User Management</h2>
+                <div id="alertUsers" class="alert"></div>
+                
+                <div class="form-section">
+                    <h3>Add New User</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="userEmail">
+                        </div>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" id="userName">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="userPassword">
+                        </div>
+                        <div class="form-group">
+                            <label>Role</label>
+                            <select id="userRole">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-success" onclick="addUser()">Add User</button>
+                </div>
+
+                <h3>Users List</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersList">
+                            <tr><td colspan="4" class="no-data">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ORDERS -->
+            <div id="adminOrders" class="content">
+                <h2 class="section-title">📦 Orders Management</h2>
+                <div id="alertOrders" class="alert"></div>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersList">
+                            <tr><td colspan="7" class="no-data">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="adminApis" class="content" style="max-height: 90vh; overflow-y: auto; padding-right: 15px;">
+                <h2 class="section-title">🏛️ Enterprise Architecture & Microservices Documentation</h2>
+
+                <!-- OVERVIEW -->
+                <div style="background: linear-gradient(135deg, #1a1a2e 0%, #2a2a4e 100%); color: #00d4ff; padding: 25px; border-radius: 8px; margin-bottom: 30px; border: 2px solid #00d4ff;">
+                    <h3 style="margin-top: 0;">📈 System Architecture Overview</h3>
+                    <p><strong>Type:</strong> Event-Driven Microservices with Distributed API Gateway</p>
+                    <p><strong>Services:</strong> 9 independent microservices + 1 API Gateway + Admin Dashboard</p>
+                    <p><strong>Communication:</strong> Synchronous (REST/HTTP) + Asynchronous (Apache Kafka)</p>
+                    <p><strong>Data Model:</strong> Database-per-service (polyglot persistence)</p>
+                    <p><strong>Stack:</strong> Spring Boot 3.4, Java 21, PostgreSQL, Apache Kafka, Docker, Express.js Dashboard</p>
+                </div>
+
+                <!-- SERVICE CATALOG -->
+                <h3 style="color: #00d4ff; margin-top: 30px; border-bottom: 2px solid #00d4ff; padding-bottom: 10px;">🔧 Complete Microservice Catalog</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    
+                    <!-- API Gateway -->
+                    <div style="background: #2a2a4e; padding: 20px; border-radius: 8px; border-left: 6px solid #ff6b6b;">
+                        <h4>🚪 API Gateway (Port 9000)</h4>
+                        <p><strong>Framework:</strong> Spring Cloud Gateway</p>
+                        <p><strong>Purpose:</strong> Single reverse proxy entry point. Authenticates all requests, routes to services, handles cross-cutting concerns.</p>
+                        <p><strong>Responsibilities:</strong></p>
+                        <ul style="margin: 10px 0 0 15px; font-size: 12px;">
+                            <li>JWT token validation & refresh</li>
+                            <li>Request/response routing (9 microservices)</li>
+                            <li>CORS & security headers</li>
+                            <li>Rate limiting & throttling</li>
+                            <li>Circuit breaker integration</li>
+                            <li>Request logging & tracing</li>
+                        </ul>
+                        <p style="margin-top: 10px; font-size: 12px; padding: 8px; background: #1a1a2e; border-radius: 4px; border-left: 3px solid #ff6b6b;">
+                            <strong>📊 Load:</strong> Handles aggregation of requests from Dashboard + clients<br>
+                            <strong>⚡ Performance:</strong> ~50ms latency per request
+                        </p>
+                    </div>
+
+                    <!-- Catalog Service -->
+                    <div style="background: #2a2a4e; padding: 20px; border-radius: 8px; border-left: 6px solid #4ecdc4;">
+                        <h4>📦 Catalog Service (Port 8081)</h4>
+                        <p><strong>Framework:</strong> Spring Boot + Spring Data JPA + REST</p>
+                        <p><strong>Database:</strong> PostgreSQL (catalog_db - dedicated)</p>
+                        <p><strong>Purpose:</strong> Complete product catalog management (products, brands, categories)</p>
+                        <p><strong>API Endpoints:</strong></p>
+                        <ul style="margin: 10px 0 0 15px; font-size: 11px;">
+                            <li>GET /products (paginated, filterable)</li>
+                            <li>POST /products (create with validation)</li>
+                            <li>PUT /products/{id} (update entire product)</li>
+                            <li>DELETE /products/{id}</li>
+                            <li>GET /brands, PUT /brands, DELETE /brands</li>
+                            <li>GET /categories, PUT /categories, DELETE /categories</li>
+                        </ul>
+                        <p style="margin-top: 10px; font-size: 11px; color: #4ecdc4;">
+                            <strong>Events Published:</strong> product-events (Kafka)<br>
+                            <strong>Cache:</strong> 1-hour TTL on products list<br>
+                            <strong>Partitions by:</strong> Brand, Category (efficient querying)
+                        </p>
+                    </div>
+
+                    <!-- Inventory Service -->
+                    <div style="background: #2a2a4e; padding: 20px; border-radius: 8px; border-left: 6px solid #95e1d3;">
+                        <h4>📊 Inventory Service (Port 8082)</h4>
+                        <p><strong>Framework:</strong> Spring Boot + Pessimistic Locking</p>
+                        <p><strong>Database:</strong> PostgreSQL (inventory_db - dedicated)</p>
+                        <p><strong>Purpose:</strong> Real-time stock management with distributed lock pattern</p>
+                        <p><strong>API Endpoints:</strong></p>
+                        <ul style="margin: 10px 0 0 15px; font-size: 11px;">
+                            <li>GET /inventory/{productId} - Get stock</li>
+                            <li>POST /inventory/decrease - Atomic decrement (with retry)</li>
+                            <li>POST /inventory/increase - Atomic increment</li>
+                            <li>PUT /inventory/{id} - Update record</li>
+                        </ul>
+                        <p style="margin-top: 10px; font-size: 11px; color: #95e1d3;">
+                            <strong>Critical Path:</strong> Order received → Inventory locked → Stock checked → Decremented<br>
+                            <strong>Retry Strategy:</strong> Exponential backoff (1s, 2s, 4s, 8s max)<br>
+                            <strong>Transactions:</strong> Pessimistic locking prevents race conditions
+                        </p>
+                    </div>
+
+                    <!-- Order Service -->
+                    <div style="background: #2a2a4e; padding: 20px; border-radius: 8px; border-left: 6px solid #f38181;">
+                        <h4>📋 Order Service (Port 8083)</h4>
+                        <p><strong>Framework:</strong> Spring Boot + Saga Pattern</p>
+                        <p><strong>Database:</strong> PostgreSQL (order_db - dedicated)</p>
+                        <p><strong>Purpose:</strong> Distributed order orchestration using Saga pattern</p>
+                        <p><strong>API Endpoints:</strong></p>
+                        <ul style="margin: 10px 0 0 15px; font-size: 11px;">
+                            <li>POST /orders - Initiate saga: Order → Inventory → Payment → Confirm</li>
+                            <li>GET /orders/{id}</li>
+                            <li>PUT /orders/{id}/status</li>
+                            <li>GET /orders/user/{userId}</li>
+                        </ul>
+                        <p style="margin-top: 10px; font-size: 11px; color: #f38181;">
+                            <strong>Saga Flow:</strong><br>
+                            1️⃣ Create order (PENDING_PAYMENT)<br>
+                            2️⃣ Call Inventory Service (sync) - if fails, rollback<br>
+                            3️⃣ Call Payment Service (sync) - if fails, restore inventory (compensate)<br>
+                            4️⃣ Publish order-placed-event to Kafka<br>
+                            5️⃣ Return CONFIRMED to client
+                        </p>
+                    </div>
+
+                    <!-- Payment Service -->
+                    <div style="background: #2a2a4e; padding: 20px; border-radius: 8px; border-left: 6px solid #aa96da;">
+                        <h4>💳 Payment Service (Port 8084)</h4>
+                        <p><strong>Framework:</strong> Spring Boot + External Gateway Integration Pattern</p>
+                        <p><strong>Database:</strong> PostgreSQL (payment_db - dedicated)</p>
+                        <p><strong>Purpose:</strong> Payment processing with idempotency & transaction logging</p>
+                        <p><strong>API Endpoints:</strong></p>
+                        <ul style="margin: 10px 0 0 15px; font-size: 11px;">
+                            <li>POST /payments/process - Charge customer (idempotent)</li>
+                            <li>GET /payments/{id}</li>
+                            <li>PUT /payments/{id}/status</li>
+                            <li>POST /payments/{id}/refund</li>
+                        </ul>
+                        <p style="margin-top: 10px; font-size: 11px; color: #aa96da;">
+                            <strong>Pattern:</strong> Idempotent key prevents duplicate charges<br>
+                            <strong>Events:</strong> Publishes payment-events (success/failure)<br>
+                            <strong>Simulation:</strong> 95% success rate for realistic testing
+                        </p>
+                    </div>
+
+                    <!-- Notification Service -->
+                    <div style="background: #2a2a4e; padding: 20px; border-radius: 8px; border-left: 6px solid #fcbad3;">
+                        <h4>📧 Notification Service (Port 8085)</h4>
+                        <p><strong>Framework:</strong> Spring Boot + Kafka Consumer Groups</p>
+                        <p><strong>Purpose:</strong> Asynchronous event consumption & notification dispatch</p>
+                        <p><strong>Kafka Topics Subscribed:</strong></p>
+                        <ul style="margin: 10px 0 0 15px; font-size: 11px;">
+                            <li>user-events → 📧 Login alerts</li>
+                            <li>product-events → 📢 New product newsletters</li>
+                            <li>order-placed-events → 📦 Order confirmations</li>
+                            <li>payment-events → 💳 Payment success/failure alerts</li>
+                            <li>order-confirmed-events → ✅ Confirmation emails</li>
+                            <li>order-cancelled-events → ❌ Cancellation notices</li>
+                        </ul>
+                        <p style="margin-top: 10px; font-size: 11px; color: #fcbad3;">
+                            <strong>Pattern:</strong> Consumer groups for scalable processing<br>
+                            <strong>Output:</strong> Console logs + email simulation<br>
+                            <strong>Scalability:</strong> Add instances = automatic partition rebalancing
+                        </p>
+                    </div>
+                </div>
+
+                <!-- COMMUNICATION & RESILIENCE -->
+                <h3 style="color: #00d4ff; margin-top: 30px; border-bottom: 2px solid #00d4ff; padding-bottom: 10px;">🔄 Communication Patterns</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: #2a2a4e; padding: 20px; border-radius: 8px;">
+                        <h4>Synchronous (REST/HTTP)</h4>
+                        <p style="font-size: 12px;"><strong>Use:</strong> When immediate response required</p>
+                        <p style="font-size: 11px; margin-top: 8px;">Dashboard → API Gateway → Order Service → Inventory Service (waits for response)</p>
+                        <p style="font-size: 11px; color: #95e1d3; margin-top: 8px;"><strong>✅ Pros:</strong> Immediate feedback, simple<br>
+                        <strong>❌ Cons:</strong> Tight coupling, availability dependency</p>
+                        <p style="font-size: 11px; margin-top: 8px; padding: 8px; background: #1a1a2e; border-radius: 4px;"><strong>Retry Config:</strong> Max 3 retries, 1s-8s exponential backoff</p>
+                    </div>
+
+                    <div style="background: #2a2a4e; padding: 20px; border-radius: 8px;">
+                        <h4>Asynchronous (Kafka Events)</h4>
+                        <p style="font-size: 12px;"><strong>Use:</strong> When response not immediately needed</p>
+                        <p style="font-size: 11px; margin-top: 8px;">Order Service → Publishes event → Notification Service consumes (async)</p>
+                        <p style="font-size: 11px; color: #fcbad3; margin-top: 8px;"><strong>✅ Pros:</strong> Loose coupling, scalable, resilient<br>
+                        <strong>❌ Cons:</strong> Eventually consistent</p>
+                        <p style="font-size: 11px; margin-top: 8px; padding: 8px; background: #1a1a2e; border-radius: 4px;"><strong>Throughput:</strong> 18 partitions × 1000 msg/s = 18K msg/s capacity</p>
+                    </div>
+                </div>
+
+                <!-- FAULT TOLERANCE -->
+                <h3 style="color: #00d4ff; margin-top: 30px; border-bottom: 2px solid #00d4ff; padding-bottom: 10px;">🛡️ Fault Tolerance & Resilience Patterns</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                    <div style="background: #2a2a4e; padding: 15px; border-radius: 8px; border-top: 3px solid #95e1d3;">
+                        <h4 style="margin-top: 0;">🔁 Retry Logic</h4>
+                        <p style="font-size: 11px"><strong>Algorithm:</strong> Exponential backoff with jitter</p>
+                        <ul style="margin: 5px 0 0 15px; font-size: 10px;">
+                            <li>Attempt 1: immediate</li>
+                            <li>Attempt 2: 1s wait</li>
+                            <li>Attempt 3: 2s wait</li>
+                            <li>Attempt 4: 4s wait (max)</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: #2a2a4e; padding: 15px; border-radius: 8px; border-top: 3px solid #f38181;">
+                        <h4 style="margin-top: 0;">⚡ Circuit Breaker</h4>
+                        <p style="font-size: 11px"><strong>States:</strong> CLOSED → OPEN → HALF_OPEN</p>
+                        <p style="font-size: 10px;">Stops calling failing service after 50% error rate for 30s</p>
+                    </div>
+
+                    <div style="background: #2a2a4e; padding: 15px; border-radius: 8px; border-top: 3px solid #aa96da;">
+                        <h4 style="margin-top: 0;">⏱️ Timeouts</h4>
+                        <p style="font-size: 11px"><strong>HTTP Timeout:</strong> 5 seconds</p>
+                        <p style="font-size: 10px;">Prevents requests hanging, triggers fallback/retry</p>
+                    </div>
+
+                    <div style="background: #2a2a4e; padding: 15px; border-radius: 8px; border-top: 3px solid #4ecdc4;">
+                        <h4 style="margin-top: 0;">🚪 Bulkhead</h4>
+                        <p style="font-size: 11px"><strong>Pattern:</strong> Thread pool isolation</p>
+                        <p style="font-size: 10px;">One slow service doesn't starve thread pool</p>
+                    </div>
+
+                    <div style="background: #2a2a4e; padding: 15px; border-radius: 8px; border-top: 3px solid #fcbad3;">
+                        <h4 style="margin-top: 0;">💾 Fallback</h4>
+                        <p style="font-size: 11px"><strong>Strategy:</strong> Return cached data</p>
+                        <p style="font-size: 10px;">If service down, serve stale but usable response</p>
+                    </div>
+
+                    <div style="background: #2a2a4e; padding: 15px; border-radius: 8px; border-top: 3px solid #ffffb3;">
+                        <h4 style="margin-top: 0;">🔍 Health Checks</h4>
+                        <p style="font-size: 11px"><strong>Endpoint:</strong> GET /actuator/health</p>
+                        <p style="font-size: 10px;">Checks DB, Kafka, API dependencies</p>
+                    </div>
+                </div>
+
+                <!-- DATABASE STRATEGY -->
+                <h3 style="color: #00d4ff; margin-top: 30px; border-bottom: 2px solid #00d4ff; padding-bottom: 10px;">🗄️ Data Persistence & Consistency</h3>
+                
+                <div style="background: #2a2a4e; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4>Database-Per-Service Architecture</h4>
+                    <p style="font-size: 12px;"><strong>Principle:</strong> Each microservice owns its data. No shared databases = independent scaling.</p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 12px; font-size: 11px;">
+                        <div style="background: #1a1a2e; padding: 10px; border-radius: 4px; border-left: 3px solid #4ecdc4;">
+                            <strong>catalog_db</strong><br>Products, Brands, Categories
+                        </div>
+                        <div style="background: #1a1a2e; padding: 10px; border-radius: 4px; border-left: 3px solid #95e1d3;">
+                            <strong>inventory_db</strong><br>Stock levels, reservations
+                        </div>
+                        <div style="background: #1a1a2e; padding: 10px; border-radius: 4px; border-left: 3px solid #f38181;">
+                            <strong>order_db</strong><br>Orders, order items
+                        </div>
+                        <div style="background: #1a1a2e; padding: 10px; border-radius: 4px; border-left: 3px solid #aa96da;">
+                            <strong>payment_db</strong><br>Transactions, receipts
+                        </div>
+                    </div>
+                    <p style="margin-top: 12px; font-size: 11px; color: #00ff88;">✅ <strong>Benefits:</strong> Independent scaling, fault isolation, technology choice per service, no central bottleneck</p>
+                </div>
+
+                <div style="background: #2a2a4e; padding: 20px; border-radius: 8px;">
+                    <h4>Data Consistency Model: Eventual Consistency (BASE)</h4>
+                    <p style="font-size: 12px;"><strong>Principle:</strong> Systems eventually reach consistent state (not immediately like ACID)</p>
+                    <p style="margin-top: 10px; font-size: 11px;"><strong>Flow Examples:</strong></p>
+                    <div style="background: #1a1a2e; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 10px; margin-top: 8px;">
+                        <strong>Scenario 1: Order Created</strong><br>
+                        T0: Order Service creates order (status=PENDING_PAYMENT) ← Local ACID transaction<br>
+                        T1: Inventory Service reduces stock ← Separate ACID transaction<br>
+                        T2: Payment Service processes payment ← Separate ACID transaction<br>
+                        T3: system consistent across all services ✅<br>
+                        <br>
+                        <strong>Scenario 2: Payment Fails</strong><br>
+                        T0: Order created<br>
+                        T1: Stock reduced<br>
+                        T2: Payment REJECTED<br>
+                        T3: Order Service compensates (rollback):<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;  - Inventory Service: Restore stock<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;  - Order Service: Set status=CANCELLED<br>
+                        T4: system eventually consistent after compensation ✅
+                    </div>
+                    <p style="margin-top: 12px; font-size: 11px; color: #aa96da;">
+                        <strong>Pattern Used:</strong> Saga Pattern (Choreography) - events trigger next step<br>
+                        <strong>Guarantee:</strong> Either all steps succeed OR all compensate (no partial state)
+                    </p>
+                </div>
+
+                <!-- SCALABILITY -->
+                <h3 style="color: #00d4ff; margin-top: 30px; border-bottom: 2px solid #00d4ff; padding-bottom: 10px;">📈 Scalability & Performance Engineering</h3>
+                
+                <div style="background: #2a2a4e; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4>Horizontal Scaling</h4>
+                    <p style="font-size: 12px;"><strong>Model:</strong> Stateless services → add instances behind load balancer</p>
+                    <p style="font-size: 11px; margin-top: 8px; padding: 8px; background: #1a1a2e; border-radius: 4px;">
+                        <strong>Scenario:</strong> Black Friday = 10x traffic spike<br>
+                        Action: Scale Order Service 1 → 10 instances<br>
+                        Result: Handle 10,000 req/sec vs 1,000 req/sec<br>
+                        Other services: unchanged (users demand catalog info, not orders)
+                    </p>
+                    <p style="margin-top: 8px; font-size: 11px; color: #4ecdc4;">✅ Independent scaling = cost efficient (no unnecessary resource waste)</p>
+                </div>
+
+                <div style="background: #2a2a4e; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4>Kafka Partitioning & Consumer Groups</h4>
+                    <p style="font-size: 12px;"><strong>Architecture:</strong> 6 topics × 3 partitions = 18 partitions</p>
+                    <div style="background: #1a1a2e; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 10px; margin-top: 8px;">
+                        Topic: order-placed-events<br>
+                        ├─ Partition 0 ← Notification Service Instance 1<br>
+                        ├─ Partition 1 ← Notification Service Instance 2<br>
+                        └─ Partition 2 ← Notification Service Instance 3<br>
+                        <br>
+                        When add 4th instance:<br>
+                        Kafka rebalances → 4th instance takes over Partition (round-robin)
+                    </div>
+                    <p style="margin-top: 8px; font-size: 11px; color: #fcbad3;">
+                        <strong>Throughput:</strong> Each partition ~1000 msg/s = 18K msg/s total<br>
+                        <strong>Scaling:</strong> Add 3 more notification instances → 36 partitions → 36K msg/s (linear)
+                    </p>
+                </div>
+
+                <div style="background: #2a2a4e; padding: 20px; border-radius: 8px;">
+                    <h4>Caching Strategy (Multi-Layer)</h4>
+                    <p style="font-size: 11px;">
+                        <strong>Layer 1:</strong> Application cache (Spring Cache) - Catalog products cached 1 hour<br>
+                        <strong>Layer 2:</strong> Database indexes - B-tree on frequent queries<br>
+                        <strong>Layer 3:</strong> Connection pooling - Reuse DB connections (HikariCP)<br>
+                        <strong>Layer 4:</strong> Distributed cache - Redis for multi-instance scenarios (optional)
+                    </p>
+                </div>
+
+                <!-- COMPARISO MONOLITH VS MICROSERVICES -->
+                <h3 style="color: #00d4ff; margin-top: 30px; border-bottom: 2px solid #00d4ff; padding-bottom: 10px;">📊 Monolith vs Microservices: Business Impact</h3>
+                
+                <div style="font-size: 11px; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #1a1a2e;">
+                                <th style="padding: 10px; border: 1px solid #3a3a5e; text-align: left;"><strong>Aspect</strong></th>
+                                <th style="padding: 10px; border: 1px solid #3a3a5e; text-align: left; color: #ff6b6b;"><strong>❌ Monolith</strong></th>
+                                <th style="padding: 10px; border: 1px solid #3a3a5e; text-align: left; color: #00ff88;"><strong>✅ Microservices</strong></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background: #2a2a4e;">
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;"><strong>Deployment</strong></td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">All or nothing (5 min restart)</td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">Individual service (0 downtime)</td>
+                            </tr>
+                            <tr style="background: #2a2a4e;">
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;"><strong>Scaling</strong></td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">Scale entire app (40% wasted)</td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">Scale only what's needed (60% savings)</td>
+                            </tr>
+                            <tr style="background: #2a2a4e;">
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;"><strong>Resilience</strong></td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">Bug = whole system down</td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">Fault isolated, system continues</td>
+                            </tr>
+                            <tr style="background: #2a2a4e;">
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;"><strong>Team Work</strong></td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">Coordination hell, merge conflicts</td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">Independent teams, own service</td>
+                            </tr>
+                            <tr style="background: #2a2a4e;">
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;"><strong>Tech Stack</strong></td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">Forever locked (Java monolith = forever Java)</td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">Mix: Notification could be Go, Catalog stay Java</td>
+                            </tr>
+                            <tr style="background: #2a2a4e;">
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;"><strong>Performance</strong></td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">No network latency (~0ms calls)</td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">Network overhead (50ms) but parallelizes</td>
+                            </tr>
+                            <tr style="background: #2a2a4e;">
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;"><strong>Complexity</strong></td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">Simple at start, quickly becomes spaghetti</td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">Complex upfront, scales cleanly</td>
+                            </tr>
+                            <tr style="background: #2a2a4e;">
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;"><strong>Consistency</strong></td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">ACID (single transaction)</td>
+                                <td style="padding: 10px; border: 1px solid #3a3a5e;">Eventual (Saga pattern)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ENTERPRISE VALUE  -->
+                <div style="background: linear-gradient(135deg, #1a1a2e 0%, #2a2a4e 100%); color: #00ff88; padding: 25px; border-radius: 8px; margin-top: 30px; margin-bottom: 20px; border: 2px solid #00ff88;">
+                    <h3 style="margin-top: 0;">💎 Enterprise Value Proposition</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-top: 15px; font-size: 12px;">
+                        <div>
+                            <p style="font-weight: bold; color: #00d4ff; margin: 0 0 5px 0;">🚀 Time-to-Market</p>
+                            <p style="margin: 0;">Feature releases weekly (vs monthly monolith). No API-wide regression tests.</p>
+                        </div>
+                        <div>
+                            <p style="font-weight: bold; color: #4ecdc4; margin: 0 0 5px 0;">💰 Cost Efficiency</p>
+                            <p style="margin: 0;">60% infrastructure savings. Scale only what's needed (no full app scaling waste).</p>
+                        </div>
+                        <div>
+                            <p style="font-weight: bold; color: #f38181; margin: 0 0 5px 0;">🔧 Operational Excellence</p>
+                            <p style="margin: 0;">MTTF: 5 min vs 45 min monolith. One service crash ≠ system crash.</p>
+                        </div>
+                        <div>
+                            <p style="font-weight: bold; color: #aa96da; margin: 0 0 5px 0;">👥 Developer Happiness</p>
+                            <p style="margin: 0;">Own service end-to-end. No monolith legacy code baggage.</p>
+                        </div>
+                        <div>
+                            <p style="font-weight: bold; color: #fcbad3; margin: 0 0 5px 0;">📱 Platform Flexibility</p>
+                            <p style="margin: 0;">Support web + mobile + partners independently. Easy API versioning.</p>
+                        </div>
+                        <div>
+                            <p style="font-weight: bold; color: #ffffb3; margin: 0 0 5px 0;">🔐 Security Compartmentalization</p>
+                            <p style="margin: 0;">Breach in one service ≠ total compromise. Services isolated with auth.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KEY METRICS -->
+                <h3 style="color: #00d4ff; margin-top: 30px; border-bottom: 2px solid #00d4ff; padding-bottom: 10px;">📊 Performance Targets</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: #2a2a4e; padding: 15px; border-radius: 8px; border-top: 3px solid #00ff88;">
+                        <h4 style="margin: 0 0 8px 0;">Availability</h4>
+                        <p style="font-size: 13px; color: #00ff88; font-weight: bold; margin: 0;">99.5% (~ 4 hrs/year downtime)</p>
+                        <p style="font-size: 11px; margin-top: 8px;">Individual services: 99% → Combined: 99.5%+ (isolation helps)</p>
+                    </div>
+
+                    <div style="background: #2a2a4e; padding: 15px; border-radius: 8px; border-top: 3px solid #4ecdc4;">
+                        <h4 style="margin: 0 0 8px 0;">Latency (P99)</h4>
+                        <p style="font-size: 13px; color: #4ecdc4; font-weight: bold; margin: 0;">500ms target</p>
+                        <p style="font-size: 11px; margin-top: 8px;">API Gateway: 50ms | DB: 20ms | Network: 30ms overhead</p>
+                    </div>
+
+                    <div style="background: #2a2a4e; padding: 15px; border-radius: 8px; border-top: 3px solid #f38181;">
+                        <h4 style="margin: 0 0 8px 0;">Throughput</h4>
+                        <p style="font-size: 13px; color: #f38181; font-weight: bold; margin: 0;">1000 req/sec per instance</p>
+                        <p style="font-size: 11px; margin-top: 8px;">10 Order Service instances = 10,000 req/sec (linear scaling)</p>
+                    </div>
+
+                    <div style="background: #2a2a4e; padding: 15px; border-radius: 8px; border-top: 3px solid #aa96da;">
+                        <h4 style="margin: 0 0 8px 0;">Error Rate</h4>
+                        <p style="font-size: 13px; color: #aa96da; font-weight: bold; margin: 0;">&lt;0.1% target</p>
+                        <p style="font-size: 11px; margin-top: 8px;">Monitored via logs + CloudWatch metrics alarm</p>
+                    </div>
+                </div>
+
+                <!-- IMPLEMENTATION NOTES -->
+                <div style="background: #1a1a2e; color: #fcbad3; padding: 20px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #fcbad3;">
+                    <h3 style="margin: 0 0 12px 0;">🛠️  Implementation Stack</h3>
+                    <p style="margin: 5px 0; font-size: 11px;"><strong>Backend:</strong> Spring Boot 3.4, Java 21, Spring Cloud, Spring Data JPA</p>
+                    <p style="margin: 5px 0; font-size: 11px;"><strong>Messaging:</strong> Apache Kafka 3.5, Spring Kafka</p>
+                    <p style="margin: 5px 0; font-size: 11px;"><strong>Data:</strong> PostgreSQL 14 (6 dedicated databases), HikariCP pooling</p>
+                    <p style="margin: 5px 0; font-size: 11px;"><strong>Container:</strong> Docker, Docker Compose (dev/demo)</p>
+                    <p style="margin: 5px 0; font-size: 11px;"><strong>Frontend:</strong> Express.js Dashboard (Node.js), HTML5, Cyber-themed UI</p>
+                    <p style="margin: 5px 0; font-size: 11px;"><strong>Deployment:</strong> Kubernetes-ready (Helm charts available)</p>
+                    <p style="margin: 5px 0; font-size: 11px;"><strong>Observability:</strong> Prometheus, Grafana, ELK Stack, Jaeger tracing</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="userContainer" class="container">
+        <div class="header">
+            <h1>🛒 My Store</h1>
+            <div class="header-right">
+                <span>Welcome, <strong id="userName">User</strong></span>
+                <button class="logout-btn" onclick="handleLogout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchUserTab('store', event)">Store</button>
+            <button class="tab-btn" onclick="switchUserTab('cart', event)">Cart</button>
+            <button class="tab-btn" onclick="switchUserTab('orders', event)">My Orders</button>
+        </div>
+
+        <div class="content-area">
+            <div id="userStore" class="content active">
+                <h2 class="section-title">Available Products</h2>
+                <div id="userProductsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;"></div>
+            </div>
+
+            <div id="userCart" class="content">
+                <h2 class="section-title">Shopping Cart</h2>
+                <div id="userCartItems"></div>
+                <div style="margin-top: 20px; text-align: right;">
+                    <div style="font-size: 20px; font-weight: bold; margin-bottom: 15px;">
+                        Total: $<span id="cartTotal">0.00</span>
+                    </div>
+                    <button class="btn btn-success" onclick="checkout()" style="padding: 12px 30px; margin: 0;">Checkout</button>
+                </div>
+            </div>
+
+            <div id="userOrders" class="content">
+                <h2 class="section-title">My Orders</h2>
+                <div id="userOrdersList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="editProductModal" class="modal">
+        <div class="modal-content">
+            <h2>Edit Product</h2>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="editProductName">
+            </div>
+            <div class="form-group">
+                <label>Price</label>
+                <input type="number" id="editProductPrice" step="0.01" min="0">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" id="editProductDesc">
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" id="editProductQty" min="0">
+            </div>
+            <button class="btn btn-success" onclick="saveProductEdit()" style="width: 100%; margin: 10px 0 5px 0;">Save</button>
+            <button class="btn" style="background: #ccc; color: #333; width: 100%; margin: 0;" onclick="closeEditProductModal()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <h2>Edit User</h2>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="editUserName">
+            </div>
+            <div class="form-group">
+                <label>Password (leave empty to keep)</label>
+                <input type="password" id="editUserPassword">
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <select id="editUserRole">
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <button class="btn btn-success" onclick="saveUserEdit()" style="width: 100%; margin: 10px 0 5px 0;">Save</button>
+            <button class="btn" style="background: #ccc; color: #333; width: 100%; margin: 0;" onclick="closeEditUserModal()">Cancel</button>
+        </div>
+    </div>
+
+    <div id="restockModal" class="modal">
+        <div class="modal-content">
+            <h2>Restock Product</h2>
+            <p id="restockProductName" style="font-weight: bold; margin-bottom: 15px;"></p>
+            <div class="form-group">
+                <label>Current Stock</label>
+                <input type="number" id="restockCurrent" disabled style="background: #f5f5f5;">
+            </div>
+            <div class="form-group">
+                <label>Add Quantity</label>
+                <input type="number" id="restockAmount" min="1" placeholder="Enter quantity to add">
+            </div>
+            <div class="form-group">
+                <label>New Total Stock</label>
+                <input type="number" id="restockTotal" disabled style="background: #f5f5f5;">
+            </div>
+            <button class="btn btn-success" onclick="saveRestock()" style="width: 100%; margin: 10px 0 5px 0;">✅ Confirm Restock</button>
+            <button class="btn" style="background: #ccc; color: #333; width: 100%; margin: 0;" onclick="closeRestockModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:5001';
+        let cart = [];
+        let currentUser = null;
+        let currentUserRole = null;
+        let isAdmin = false;
+        let editingProductId = null;
+        let editingUserEmail = null;
+
+        async function init() {
+            await loadBrands();
+            await loadCategories();
+        }
+
+        // ==================== LOGIN ====================
+        function switchLoginTab(tab, event) {
+            document.getElementById('loginForm').classList.toggle('active', tab === 'login');
+            document.getElementById('signupForm').classList.toggle('active', tab === 'signup');
+            document.querySelectorAll('.login-tab-btn').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                alert('Please enter email and password');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    alert('Login failed: ' + data.message);
+                    return;
+                }
+
+                currentUser = email;
+                currentUserRole = data.role;
+                isAdmin = data.role === 'admin';
+
+                document.getElementById('loginContainer').style.display = 'none';
+                if (isAdmin) {
+                    document.getElementById('adminContainer').classList.add('active');
+                    document.getElementById('adminName').textContent = data.name;
+                    loadAdminDashboard();
+                } else {
+                    document.getElementById('userContainer').classList.add('active');
+                    document.getElementById('userName').textContent = data.name;
+                    loadUserStore();
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function handleSignup() {
+            const email = document.getElementById('signupEmail').value;
+            const name = document.getElementById('signupName').value;
+            const password = document.getElementById('signupPassword').value;
+
+            if (!email || !name || !password) {
+                alert('Please fill all fields');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API}/api/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, name, password })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    alert('Account created! Please login.');
+                    switchLoginTab('login');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            currentUserRole = null;
+            isAdmin = false;
+            cart = [];
+            document.getElementById('loginContainer').style.display = 'block';
+            document.getElementById('adminContainer').classList.remove('active');
+            document.getElementById('userContainer').classList.remove('active');
+            location.reload();
+        }
+
+        // ==================== BRANDS ====================
+        async function loadBrands() {
+            try {
+                const res = await fetch(`${API}/api/admin/brands`);
+                const brands = await res.json();
+                
+                // Update select dropdown
+                const select = document.getElementById('productBrand');
+                if (select) {
+                    select.innerHTML = '<option value="">Select a Brand</option>';
+                    brands.forEach(b => {
+                        const opt = document.createElement('option');
+                        opt.value = b.id;
+                        opt.textContent = b.name;
+                        select.appendChild(opt);
+                    });
+                }
+                
+                // Update management table
+                const table = document.getElementById('brandsList');
+                if (table) {
+                    if (brands.length === 0) {
+                        table.innerHTML = '<tr><td colspan="2" class="no-data">No brands yet</td></tr>';
+                    } else {
+                        table.innerHTML = brands.map(b => `
+                            <tr>
+                                <td>${b.name}</td>
+                                <td>
+                                    <button class="btn btn-info btn-small" onclick="editBrand(${b.id}, '${b.name.replace(/'/g, "\\'")}')">Edit</button>
+                                    <button class="btn btn-danger btn-small" onclick="deleteBrand(${b.id})">Delete</button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading brands:', e);
+            }
+        }
+
+        async function editBrand(id, currentName) {
+            const newName = prompt('Edit brand name:', currentName);
+            if (!newName || newName.trim() === '') return;
+            
+            try {
+                const res = await fetch(`${API}/api/admin/brands/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: newName.trim() })
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    showAlert('alertManagement', '❌ Failed: ' + (data.message || data.error), 'error');
+                    return;
+                }
+                
+                showAlert('alertManagement', '✅ Brand updated!', 'success');
+                await loadBrands();
+            } catch (e) {
+                showAlert('alertManagement', '❌ Error: ' + e.message, 'error');
+            }
+        }
+
+        async function saveBrand() {
+            const name = document.getElementById('newBrandName').value.trim();
+            if (!name) { 
+                showAlert('alertManagement', 'Please enter brand name', 'error'); 
+                return; 
+            }
+
+            try {
+                const res = await fetch(`${API}/api/admin/brands`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+
+                if (!res.ok) {
+                    const text = await res.text();
+                    if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                        showAlert('alertManagement', 'Server error (500). Check backend connection.', 'error');
+                        console.error('Backend returned HTML - server may be down');
+                        return;
+                    }
+                    const data = JSON.parse(text);
+                    showAlert('alertManagement', '❌ Failed: ' + (data.message || data.error), 'error');
+                    return;
+                }
+                
+                const data = await res.json();
+                showAlert('alertManagement', '✅ Brand added!', 'success');
+                document.getElementById('newBrandName').value = '';
+                await loadBrands();
+            } catch (e) { 
+                showAlert('alertManagement', '❌ Error: ' + e.message, 'error');
+                console.error('Brand add error:', e);
+            }
+        }
+
+        async function deleteBrand(id) {
+            if (!confirm('Delete this brand?')) return;
+            try {
+                const res = await fetch(`${API}/api/admin/brands/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showAlert('alertManagement', 'Brand deleted!', 'success');
+                    await loadBrands();
+                } else {
+                    showAlert('alertManagement', 'Error deleting brand', 'error');
+                }
+            } catch (e) { 
+                showAlert('alertManagement', 'Error: ' + e.message, 'error');
+            }
+        }
+
+        // ==================== CATEGORIES ====================
+        async function loadCategories() {
+            try {
+                const res = await fetch(`${API}/api/admin/categories`);
+                const categories = await res.json();
+                
+                // Update select dropdown
+                const select = document.getElementById('productCategory');
+                if (select) {
+                    select.innerHTML = '<option value="">Select a Category</option>';
+                    categories.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.textContent = c.name;
+                        select.appendChild(opt);
+                    });
+                }
+                
+                // Update management table
+                const table = document.getElementById('categoriesList');
+                if (table) {
+                    if (categories.length === 0) {
+                        table.innerHTML = '<tr><td colspan="2" class="no-data">No categories yet</td></tr>';
+                    } else {
+                        table.innerHTML = categories.map(c => `
+                            <tr>
+                                <td>${c.name}</td>
+                                <td>
+                                    <button class="btn btn-info btn-small" onclick="editCategory(${c.id}, '${c.name.replace(/'/g, "\\'")}')"  >Edit</button>
+                                    <button class="btn btn-danger btn-small" onclick="deleteCategory(${c.id})">Delete</button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading categories:', e);
+            }
+        }
+
+        async function editCategory(id, currentName) {
+            const newName = prompt('Edit category name:', currentName);
+            if (!newName || newName.trim() === '') return;
+            
+            try {
+                const res = await fetch(`${API}/api/admin/categories/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: newName.trim() })
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    showAlert('alertManagement', '❌ Failed: ' + (data.message || data.error), 'error');
+                    return;
+                }
+                
+                showAlert('alertManagement', '✅ Category updated!', 'success');
+                await loadCategories();
+            } catch (e) {
+                showAlert('alertManagement', '❌ Error: ' + e.message, 'error');
+            }
+        }
+
+        async function saveCategory() {
+            const name = document.getElementById('newCategoryName').value.trim();
+            if (!name) { alert('Please enter category name'); return; }
+
+            try {
+                const res = await fetch(`${API}/api/admin/categories`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+
+                if (res.ok) {
+                    showAlert('alertManagement', '✅ Category added!', 'success');
+                    document.getElementById('newCategoryName').value = '';
+                    await loadCategories();
+                } else {
+                    const data = await res.json();
+                    showAlert('alertManagement', '❌ ' + (data.message || data.error || 'Failed'), 'error');
+                }
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        async function deleteCategory(id) {
+            if (!confirm('Delete this category?')) return;
+            try {
+                const res = await fetch(`${API}/api/admin/categories/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showAlert('alertManagement', '✅ Category deleted!', 'success');
+                    await loadCategories();
+                } else {
+                    showAlert('alertManagement', '❌ Error deleting category', 'error');
+                }
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        // ==================== TAB SWITCHING ====================
+        function switchAdminTab(tab, event) {
+            document.querySelectorAll('#adminContainer .content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('#adminContainer .tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('admin' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
+
+            if (tab === 'management') { loadBrands(); loadCategories(); }
+            else if (tab === 'products') loadProducts();
+            else if (tab === 'users') loadUsers();
+            else if (tab === 'orders') loadOrders();
+            else if (tab === 'apis') {}
+        }
+
+        function switchUserTab(tab, event) {
+            document.querySelectorAll('#userContainer .content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('#userContainer .tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('user' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+            if (event && event.target) event.target.classList.add('active');
+
+            if (tab === 'store') loadUserStore();
+            else if (tab === 'cart') updateCartDisplay();
+            else if (tab === 'orders') loadUserOrders();
+        }
+
+        // ==================== UTILITIES ====================
+        function showAlert(id, msg, type) {
+            const alert = document.getElementById(id);
+            alert.textContent = msg;
+            alert.className = `alert ${type}`;
+            setTimeout(() => alert.className = 'alert', 4000);
+        }
+
+        // ==================== DASHBOARD ====================
+        async function loadAdminDashboard() {
+            try {
+                const products = await fetch(`${API}/api/admin/products`).then(r => r.json()).catch(() => []);
+                const users = await fetch(`${API}/api/admin/users`).then(r => r.json()).catch(() => []);
+                const orders = await fetch(`${API}/api/admin/orders`).then(r => r.json()).catch(() => []);
+                
+                document.getElementById('statProducts').textContent = (Array.isArray(products) ? products.length : 0);
+                document.getElementById('statUsers').textContent = (Array.isArray(users) ? users.length : 0);
+                document.getElementById('statOrders').textContent = (Array.isArray(orders) ? orders.length : 0);
+            } catch (e) { console.error('Dashboard error:', e); }
+        }
+
+        // ==================== PRODUCTS ====================
+        function generateSKU(productId) {
+            return 'PRD-' + String(productId).padStart(6, '0');
+        }
+
+        async function loadProducts() {
+            try {
+                const res = await fetch(`${API}/api/admin/products`);
+                if (!res.ok) throw new Error('Failed');
+                
+                const products = await res.json() || [];
+                let html = '';
+                
+                products.forEach(p => {
+                    const sku = p.sku || generateSKU(p.id);
+                    html += `<tr>
+                        <td><code>${sku}</code></td>
+                        <td>${p.name}</td>
+                        <td>${p.brand || 'N/A'}</td>
+                        <td>${p.category || 'N/A'}</td>
+                        <td>$${(p.price || 0).toFixed(2)}</td>
+                        <td>${p.quantity || 0}</td>
+                        <td>
+                            <button class="btn btn-info btn-small" onclick="openRestockModal(${p.id}, '${p.name}', ${p.quantity || 0})">Restock</button>
+                            <button class="btn btn-danger btn-small" onclick="deleteProduct(${p.id})">Delete</button>
+                        </td>
+                    </tr>`;
+                });
+                
+                document.getElementById('productsList').innerHTML = html || '<tr><td colspan="7" class="no-data">No products</td></tr>';
+            } catch (e) { showAlert('alertProducts', 'Error: ' + e.message, 'error'); }
+        }
+
+        async function addProduct() {
+            const name = document.getElementById('productName').value;
+            const brandId = document.getElementById('productBrand').value;
+            const categoryId = document.getElementById('productCategory').value;
+            const price = document.getElementById('productPrice').value;
+            const desc = document.getElementById('productDesc').value;
+            const qty = document.getElementById('productQty').value;
+
+            if (!name || !brandId || !categoryId || !price) {
+                showAlert('alertProducts', 'Please fill all required fields', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API}/api/admin/products`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name, brandId: parseInt(brandId), categoryId: parseInt(categoryId),
+                        price: parseFloat(price), description: desc, quantity: parseInt(qty) || 100
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    showAlert('alertProducts', `Product added! SKU: ${data.sku}`, 'success');
+                    document.getElementById('productName').value = '';
+                    document.getElementById('productPrice').value = '';
+                    document.getElementById('productDesc').value = '';
+                    loadProducts();
+                } else {
+                    showAlert('alertProducts', 'Error: ' + (data.error || data.message), 'error');
+                }
+            } catch (e) { showAlert('alertProducts', 'Error: ' + e.message, 'error'); }
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('Delete this product?')) return;
+            
+            try {
+                const res = await fetch(`${API}/api/admin/products/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showAlert('alertProducts', 'Product deleted!', 'success');
+                    loadProducts();
+                } else {
+                    showAlert('alertProducts', 'Error deleting product', 'error');
+                }
+            } catch (e) { showAlert('alertProducts', 'Error: ' + e.message, 'error'); }
+        }
+
+        let restockData = { id: null, current: 0 };
+
+        function openRestockModal(id, name, current) {
+            restockData = { id, current };
+            document.getElementById('restockProductName').textContent = name;
+            document.getElementById('restockCurrent').value = current;
+            document.getElementById('restockAmount').value = '';
+            document.getElementById('restockTotal').value = '';
+            document.getElementById('restockModal').classList.add('active');
+        }
+
+        function closeRestockModal() {
+            document.getElementById('restockModal').classList.remove('active');
+        }
+
+        document.addEventListener('input', function(e) {
+            if (e.target.id === 'restockAmount') {
+                const amount = parseInt(e.target.value) || 0;
+                const total = restockData.current + amount;
+                document.getElementById('restockTotal').value = total;
+            }
+        });
+
+        async function saveRestock() {
+            const amount = parseInt(document.getElementById('restockAmount').value);
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid quantity to add');
+                return;
+            }
+
+            try {
+                const newQty = restockData.current + amount;
+                const res = await fetch(`${API}/api/admin/restock/${restockData.id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ quantity: newQty })
+                });
+
+                if (res.ok) {
+                    showAlert('alertProducts', `✅ Restocked! +${amount} units (Total: ${newQty})`, 'success');
+                    closeRestockModal();
+                    loadProducts();
+                } else {
+                    showAlert('alertProducts', 'Error updating stock', 'error');
+                }
+            } catch (e) {
+                showAlert('alertProducts', 'Error: ' + e.message, 'error');
+            }
+        }
+
+        // ==================== USERS ====================
+        async function loadUsers() {
+            try {
+                const res = await fetch(`${API}/api/admin/users`);
+                if (!res.ok) throw new Error('Failed');
+                
+                const users = await res.json() || [];
+                let html = '';
+                
+                users.forEach(u => {
+                    html += `<tr>
+                        <td>${u.email}</td>
+                        <td>${u.name}</td>
+                        <td>${u.role}</td>
+                        <td><button class="btn btn-danger btn-small" onclick="deleteUser('${u.email}')">Delete</button></td>
+                    </tr>`;
+                });
+                
+                document.getElementById('usersList').innerHTML = html || '<tr><td colspan="4" class="no-data">No users</td></tr>';
+            } catch (e) { showAlert('alertUsers', 'Error loading users', 'error'); }
+        }
+
+        async function addUser() {
+            const email = document.getElementById('userEmail').value;
+            const name = document.getElementById('userName').value;
+            const password = document.getElementById('userPassword').value;
+            const role = document.getElementById('userRole').value;
+
+            if (!email || !name || !password) {
+                showAlert('alertUsers', 'Please fill all fields', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API}/api/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, name, password, role })
+                });
+
+                if (res.ok) {
+                    showAlert('alertUsers', 'User added!', 'success');
+                    document.getElementById('userEmail').value = '';
+                    document.getElementById('userName').value = '';
+                    document.getElementById('userPassword').value = '';
+                    loadUsers();
+                } else {
+                    const data = await res.json();
+                    showAlert('alertUsers', 'Error: ' + data.message, 'error');
+                }
+            } catch (e) { showAlert('alertUsers', 'Error: ' + e.message, 'error'); }
+        }
+
+        async function deleteUser(email) {
+            if (!confirm('Delete user ' + email + '?')) return;
+            
+            try {
+                const res = await fetch(`${API}/api/admin/users/${encodeURIComponent(email)}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showAlert('alertUsers', 'User deleted!', 'success');
+                    loadUsers();
+                } else {
+                    showAlert('alertUsers', 'Error deleting user', 'error');
+                }
+            } catch (e) { showAlert('alertUsers', 'Error: ' + e.message, 'error'); }
+        }
+
+        // ==================== ORDERS ====================
+        async function loadOrders() {
+            try {
+                const res = await fetch(`${API}/api/admin/orders`);
+                if (!res.ok) throw new Error('Failed');
+                
+                const orders = await res.json() || [];
+                let html = '';
+                
+                orders.forEach(o => {
+                    const statusClass = `status-${o.status.toLowerCase()}`;
+                    const validStatuses = getValidStatusTransitions(o.status);
+                    let statusSelect = `<select onchange="changeOrderStatus(${o.orderId}, this.value)" style="font-size: 12px; padding: 4px;">
+                        <option value="">→ Change...</option>`;
+                    validStatuses.forEach(s => {
+                        statusSelect += `<option value="${s}">${s}</option>`;
+                    });
+                    statusSelect += `</select>`;
+
+                    html += `<tr>
+                        <td>#${o.orderId}</td>
+                        <td>${o.email}</td>
+                        <td>#${o.productId}</td>
+                        <td>${o.quantity}</td>
+                        <td>$${(o.totalAmount || 0).toFixed(2)}</td>
+                        <td><span class="status-badge ${statusClass}">${o.status}</span></td>
+                        <td style="font-size: 11px;">
+                            <div style="display: flex; gap: 2px;">
+                                ${statusSelect}
+                                <button class="btn btn-danger btn-small" onclick="deleteOrder(${o.orderId})">Delete</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                
+                document.getElementById('ordersList').innerHTML = html || '<tr><td colspan="7" class="no-data">No orders</td></tr>';
+            } catch (e) { showAlert('alertOrders', 'Error: ' + e.message, 'error'); }
+        }
+
+        function getValidStatusTransitions(currentStatus) {
+            const transitions = {
+                'PENDING_PAYMENT': ['PAID', 'CANCELLED'],
+                'PAID': ['SHIPPED', 'REFUNDED'],
+                'SHIPPED': ['DELIVERED', 'CANCELLED'],
+                'DELIVERED': [],
+                'CANCELLED': [],
+                'REFUNDED': []
+            };
+            return transitions[currentStatus] || [];
+        }
+
+        async function changeOrderStatus(id, status) {
+            if (!status) return;
+            
+            try {
+                const res = await fetch(`${API}/api/admin/orders/${id}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    showAlert('alertOrders', `Order changed to ${status}!`, 'success');
+                    loadOrders();
+                } else {
+                    showAlert('alertOrders', data.message, 'error');
+                }
+            } catch (e) { showAlert('alertOrders', 'Error: ' + e.message, 'error'); }
+        }
+
+        async function deleteOrder(id) {
+            if (!confirm('Delete this order?')) return;
+            
+            try {
+                const res = await fetch(`${API}/api/admin/orders/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showAlert('alertOrders', 'Order deleted!', 'success');
+                    loadOrders();
+                } else {
+                    showAlert('alertOrders', 'Error deleting order', 'error');
+                }
+            } catch (e) { showAlert('alertOrders', 'Error: ' + e.message, 'error'); }
+        }
+
+        // ==================== USER STORE ====================
+        async function loadUserStore() {
+            try {
+                const res = await fetch(`${API}/api/user/products`);
+                if (!res.ok) throw new Error('Failed');
+                
+                const products = await res.json() || [];
+                let html = '';
+                
+                products.forEach(p => {
+                    html += `
+                        <div class="form-section" style="padding: 15px;">
+                            <h3 style="font-size: 16px; margin-bottom: 8px;">${p.name}</h3>
+                            <small>${p.brand} • ${p.category}</small>
+                            <div class="price" style="margin: 10px 0;">$${(p.price || 0).toFixed(2)}</div>
+                            <button class="btn btn-success" onclick="addToCart(${p.id}, '${p.name}', ${p.price})" style="width: 100%; margin: 0;">Add to Cart</button>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('userProductsGrid').innerHTML = html || '<div class="no-data">No products available</div>';
+            } catch (e) { console.error('Error loading store:', e); }
+        }
+
+        // ==================== CART ====================
+        function addToCart(id, name, price) {
+            const existing = cart.find(item => item.id === id);
+            if (existing) {
+                existing.qty++;
+            } else {
+                cart.push({ id, name, price, qty: 1 });
+            }
+            alert(`Added "${name}" to cart!`);
+        }
+
+        function updateCartDisplay() {
+            let html = '';
+            let total = 0;
+
+            if (cart.length === 0) {
+                html = '<div class="no-data">Your cart is empty</div>';
+            } else {
+                cart.forEach((item, idx) => {
+                    const subtotal = item.price * item.qty;
+                    total += subtotal;
+                    html += `
+                        <div class="form-section">
+                            <div style="display: flex; justify-content: space-between;">
+                                <div>
+                                    <strong>${item.name}</strong><br>
+                                    $${item.price.toFixed(2)} x ${item.qty} = <strong>$${subtotal.toFixed(2)}</strong>
+                                </div>
+                                <div style="display: flex; gap: 5px;">
+                                    <button class="btn btn-info btn-small" onclick="updateQty(${idx}, -1)">-</button>
+                                    <button class="btn btn-info btn-small" onclick="updateQty(${idx}, 1)">+</button>
+                                    <button class="btn btn-danger btn-small" onclick="removeFromCart(${idx})">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('userCartItems').innerHTML = html;
+            document.getElementById('cartTotal').textContent = total.toFixed(2);
+        }
+
+        function updateQty(idx, delta) {
+            cart[idx].qty += delta;
+            if (cart[idx].qty <= 0) removeFromCart(idx);
+            else updateCartDisplay();
+        }
+
+        function removeFromCart(idx) {
+            cart.splice(idx, 1);
+            updateCartDisplay();
+        }
+
+        async function checkout() {
+            if (cart.length === 0) { alert('Cart is empty'); return; }
+
+            try {
+                const res = await fetch(`${API}/api/user/orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: currentUser,
+                        productId: cart[0].id,
+                        quantity: cart.reduce((sum, item) => sum + item.qty, 0)
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    alert(`Order created! Tracking: #${data.trackingId}`);
+                    cart = [];
+                    updateCartDisplay();
+                    loadUserOrders();
+                    switchUserTab('orders');
+                } else {
+                    alert('Error creating order');
+                }
+            } catch (e) { alert('Error: ' + e.message); }
+        }
+
+        // ==================== USER ORDERS ====================
+        async function loadUserOrders() {
+            try {
+                const res = await fetch(`${API}/api/user/my-orders/${encodeURIComponent(currentUser)}`);
+                if (!res.ok) throw new Error('Failed');
+                
+                const orders = await res.json() || [];
+                let html = '';
+                
+                orders.forEach(o => {
+                    const statusClass = `status-${o.status.toLowerCase()}`;
+                    html += `
+                        <div class="form-section">
+                            <strong>Order #${o.orderId}</strong> <span class="status-badge ${statusClass}">${o.status}</span><br>
+                            Product: #${o.productId} | Qty: ${o.quantity} | Total: $${(o.totalAmount || 0).toFixed(2)}<br>
+                            <small>${new Date(o.createdAt).toLocaleDateString()}</small>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('userOrdersList').innerHTML = html || '<div class="no-data">No orders yet</div>';
+            } catch (e) { console.error('Error loading orders:', e); }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

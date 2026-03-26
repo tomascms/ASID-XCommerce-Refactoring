@@ -8,10 +8,13 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 @Order(2)
 public class DataInitializer implements CommandLineRunner {
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -25,7 +28,7 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        System.out.println(">>> Verificando base de dados...");
+        log.info("🔍 Verificando base de dados de autenticação...");
         
         if (userRepository.count() == 0) {
             User admin = new User();
@@ -48,10 +51,11 @@ public class DataInitializer implements CommandLineRunner {
                     "HQ"
                 ));
             } catch (Exception ignored) {
+                log.warn("⚠️ Warning ao sincronizar admin user");
             }
-            System.out.println(">>> Utilizador Admin criado com sucesso!");
+            log.info("✅ Utilizador Admin criado com sucesso!");
         } else {
-            System.out.println(">>> Base de dados já contém utilizadores.");
+            log.info("✓ Base de dados já contém utilizadores.");
         }
     }
 } 

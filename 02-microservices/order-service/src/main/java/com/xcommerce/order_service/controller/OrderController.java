@@ -2,6 +2,7 @@ package com.xcommerce.order_service.controller;
 
 import com.xcommerce.order_service.dto.CreateOrderRequest;
 import com.xcommerce.order_service.model.Order;
+import com.xcommerce.order_service.dto.OrderResponse;
 import com.xcommerce.order_service.model.OrderStatus;
 import com.xcommerce.order_service.repository.OrderRepository;
 import com.xcommerce.order_service.service.OrderService;
@@ -24,25 +25,25 @@ public class OrderController {
     private OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<Order> createOrder(
+    public ResponseEntity<OrderResponse> createOrder(
         @Valid @RequestBody CreateOrderRequest order,
         @RequestHeader(value = "X-User-Name", required = false) String username
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createDirectOrder(username, order));
+        return ResponseEntity.status(HttpStatus.CREATED).body(OrderResponse.from(orderService.createDirectOrder(username, order)));
     }
 
     @PostMapping("/checkout")
-    public ResponseEntity<Order> checkout(@RequestHeader("X-User-Name") String username) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(username));
+    public ResponseEntity<OrderResponse> checkout(@RequestHeader("X-User-Name") String username) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(OrderResponse.from(orderService.createOrder(username)));
     }
 
     @GetMapping("/checkout")
-    public ResponseEntity<Order> checkoutLegacy(@RequestHeader("X-User-Name") String username) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(username));
+    public ResponseEntity<OrderResponse> checkoutLegacy(@RequestHeader("X-User-Name") String username) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(OrderResponse.from(orderService.createOrder(username)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrder(
+    public ResponseEntity<OrderResponse> getOrder(
         @PathVariable Long id,
         @RequestHeader("X-User-Name") String username,
         @RequestHeader("X-User-Role") String role
@@ -50,20 +51,20 @@ public class OrderController {
         return repository.findById(id)
             .map(order -> {
                 if (!isAdmin(role) && !order.getUsername().equalsIgnoreCase(username)) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN).<Order>build();
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).<OrderResponse>build();
                 }
-                return ResponseEntity.ok(order);
+                return ResponseEntity.ok(OrderResponse.from(order));
             })
             .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/list")
-    public ResponseEntity<List<Order>> getOrdersByCustomer(@RequestHeader("X-User-Name") String username) {
-        return ResponseEntity.ok(orderService.getOrdersByCustomer(username));
+    public ResponseEntity<List<OrderResponse>> getOrdersByCustomer(@RequestHeader("X-User-Name") String username) {
+        return ResponseEntity.ok(orderService.getOrdersByCustomer(username).stream().map(OrderResponse::from).toList());
     }
 
     @GetMapping("/backOffice/list")
-    public ResponseEntity<List<Order>> getOrdersBackOffice(
+    public ResponseEntity<List<OrderResponse>> getOrdersBackOffice(
         @RequestParam(required = false) String customerId,
         @RequestParam(required = false) String username,
         @RequestHeader("X-User-Role") String role
@@ -73,9 +74,9 @@ public class OrderController {
         }
         String effectiveUsername = username != null && !username.isBlank() ? username : customerId;
         if (effectiveUsername == null || effectiveUsername.isBlank()) {
-            return ResponseEntity.ok(repository.findAll());
+            return ResponseEntity.ok(repository.findAll().stream().map(OrderResponse::from).toList());
         }
-        return ResponseEntity.ok(orderService.getOrdersByCustomer(effectiveUsername));
+        return ResponseEntity.ok(orderService.getOrdersByCustomer(effectiveUsername).stream().map(OrderResponse::from).toList());
     }
 
     @PatchMapping("/{id}/status")

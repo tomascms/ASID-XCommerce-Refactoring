@@ -53,6 +53,7 @@ public class OrderService {
         return repository.findByUsernameOrderByOrderDateDesc(username);
     }
 
+    @Transactional
     public Order updateOrderStatus(Long orderId, OrderStatus newStatus) {
         Order order = repository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
         order.setStatus(newStatus);

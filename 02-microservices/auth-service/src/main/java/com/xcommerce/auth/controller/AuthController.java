@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +40,7 @@ public class AuthController {
     private PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
+    @Transactional
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest data) {
         String username = data.username() != null && !data.username().isBlank() ? data.username() : data.email();
         String email = data.email() != null && !data.email().isBlank() ? data.email() : username;
@@ -48,7 +50,7 @@ public class AuthController {
         }
 
         if (userRepository.findByUsernameOrEmail(username, email) != null) {
-            return ResponseEntity.ok().build();
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Usuario ja existe");
         }
 
         User user = new User();
@@ -94,6 +96,7 @@ public class AuthController {
     }
 
     @PostMapping("/internal/sync")
+    @Transactional
     public ResponseEntity<Void> syncInternal(@RequestBody UserSyncRequest request) {
         if (request.username() == null || request.username().isBlank() || request.email() == null || request.email().isBlank()) {
             return ResponseEntity.badRequest().build();

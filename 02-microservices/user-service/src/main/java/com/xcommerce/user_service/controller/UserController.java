@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -19,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/users")
+@SuppressWarnings("unchecked")
 public class UserController {
 
     @Autowired
@@ -34,6 +36,7 @@ public class UserController {
     private PasswordEncoder passwordEncoder;
 
     @PostMapping
+    @Transactional
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest request) {
         User savedUser = createOrUpdate(null, request, "CUSTOMER");
         userProducer.sendUserCreatedEvent(savedUser.getUsername());
@@ -41,6 +44,7 @@ public class UserController {
     }
 
     @PostMapping("/admin")
+    @Transactional
     public ResponseEntity<UserResponse> createAdmin(
         @Valid @RequestBody UserRequest request,
         @RequestHeader("X-User-Role") String requesterRole
@@ -52,6 +56,7 @@ public class UserController {
     }
 
     @PostMapping("/super-admin")
+    @Transactional
     public ResponseEntity<UserResponse> createSuperAdmin(
         @Valid @RequestBody UserRequest request,
         @RequestHeader("X-User-Role") String requesterRole
@@ -103,6 +108,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}")
+    @Transactional
     public ResponseEntity<UserResponse> updateUser(
         @PathVariable Long id,
         @RequestBody UserRequest data,
@@ -122,6 +128,7 @@ public class UserController {
     }
 
     @PostMapping("/internal/sync")
+    @Transactional
     public ResponseEntity<Void> syncInternal(@RequestBody AuthUserSyncRequest request) {
         if (request.username() == null || request.username().isBlank() || request.email() == null || request.email().isBlank()) {
             return ResponseEntity.badRequest().build();

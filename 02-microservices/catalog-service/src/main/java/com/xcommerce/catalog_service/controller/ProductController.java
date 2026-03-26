@@ -5,6 +5,8 @@ import com.xcommerce.catalog_service.model.Brand;
 import com.xcommerce.catalog_service.model.Category;
 import com.xcommerce.catalog_service.model.Product;
 import com.xcommerce.catalog_service.model.Review;
+import com.xcommerce.catalog_service.dto.ProductResponse;
+import com.xcommerce.catalog_service.dto.ReviewResponse;
 import com.xcommerce.catalog_service.repository.BrandRepository;
 import com.xcommerce.catalog_service.repository.CategoryRepository;
 import com.xcommerce.catalog_service.repository.ProductRepository;
@@ -14,6 +16,7 @@ import com.xcommerce.catalog_service.service.InventorySyncService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -22,6 +25,7 @@ import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/products")
+@SuppressWarnings("unchecked")
 public class ProductController {
 
     @Autowired
@@ -42,13 +46,15 @@ public class ProductController {
     @Autowired
     private InventorySyncService inventorySyncService;
 
+
+
     @GetMapping
-    public List<Product> getAll() {
-        return repository.findAll();
+    public List<ProductResponse> getAll() {
+        return repository.findAll().stream().map(ProductResponse::from).toList();
     }
 
     @GetMapping("/search")
-    public List<Product> search(
+    public List<ProductResponse> search(
         @RequestParam(required = false) String name,
         @RequestParam(required = false) String category,
         @RequestParam(required = false) Long categoryId,
@@ -58,7 +64,6 @@ public class ProductController {
         @RequestParam(required = false) BigDecimal maxPrice
     ) {
         Stream<Product> stream = repository.findAll().stream();
-
         if (name != null && !name.isBlank()) {
             String normalized = name.toLowerCase();
             stream = stream.filter(product -> product.getName() != null && product.getName().toLowerCase().contains(normalized));
@@ -81,40 +86,41 @@ public class ProductController {
         if (maxPrice != null) {
             stream = stream.filter(product -> product.getPrice() != null && product.getPrice().compareTo(maxPrice) <= 0);
         }
-
-        return stream.toList();
+        return stream.map(ProductResponse::from).toList();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Product> getById(@PathVariable Long id) {
+    public ResponseEntity<ProductResponse> getById(@PathVariable Long id) {
         return repository.findById(id)
-            .map(ResponseEntity::ok)
+            .map(product -> ResponseEntity.ok(ProductResponse.from(product)))
             .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Product> create(@RequestBody ProductRequest request) {
+    @Transactional
+    public ResponseEntity<ProductResponse> create(@RequestBody ProductRequest request) {
         Product product = new Product();
         applyRequest(product, request);
         Product savedProduct = repository.save(product);
         inventorySyncService.syncProduct(savedProduct);
         catalogProducer.sendProductCreatedEvent(savedProduct);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ProductResponse.from(savedProduct));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Product> update(@PathVariable Long id, @RequestBody ProductRequest productDetails) {
+    @Transactional
+    public ResponseEntity<ProductResponse> update(@PathVariable Long id, @RequestBody ProductRequest productDetails) {
         return repository.findById(id).map(product -> {
             applyRequest(product, productDetails);
-
             Product updatedProduct = repository.save(product);
             inventorySyncService.syncProduct(updatedProduct);
             catalogProducer.sendProductCreatedEvent(updatedProduct);
-            return ResponseEntity.ok(updatedProduct);
+            return ResponseEntity.ok(ProductResponse.from(updatedProduct));
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         return repository.findById(id).map(product -> {
             repository.delete(product);
@@ -130,19 +136,21 @@ public class ProductController {
     }
 
     @GetMapping("/{id}/reviews")
-    public ResponseEntity<List<Review>> getReviews(@PathVariable Long id) {
+    public ResponseEntity<List<ReviewResponse>> getReviews(@PathVariable Long id) {
         if (!repository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(reviewRepository.findByProductId(id));
+        List<ReviewResponse> reviews = reviewRepository.findByProductId(id).stream().map(ReviewResponse::from).toList();
+        return ResponseEntity.ok(reviews);
     }
 
     @PostMapping("/{id}/reviews")
-    public ResponseEntity<Review> createReview(@PathVariable Long id, @RequestBody Review review) {
+    public ResponseEntity<ReviewResponse> createReview(@PathVariable Long id, @RequestBody Review review) {
         return repository.findById(id).map(product -> {
             review.setId(null);
             review.setProduct(product);
-            return ResponseEntity.status(HttpStatus.CREATED).body(reviewRepository.save(review));
+            Review saved = reviewRepository.save(review);
+            return ResponseEntity.status(HttpStatus.CREATED).body(ReviewResponse.from(saved));
         }).orElse(ResponseEntity.notFound().build());
     }
 

@@ -24,6 +24,9 @@ services:
       psql -U postgres -c 'CREATE DATABASE xcommerce_inventory;';
       psql -U postgres -c 'CREATE DATABASE xcommerce_orders;';
       psql -U postgres -c 'CREATE DATABASE xcommerce_users;';
+      psql -U postgres -c 'CREATE DATABASE xcommerce_payment;';
+      psql -U postgres -c 'CREATE DATABASE xcommerce_notification;';
+      psql -U postgres -c 'CREATE DATABASE xcommerce_keycloak;';
       wait"
 
   zookeeper:
@@ -58,6 +61,33 @@ services:
     networks:
       - xcommerce-network
 
+  # --- IDENTITY & ACCESS MANAGEMENT ---
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: xcommerce-keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://xcommerce-db:5432/xcommerce_keycloak
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: postgres
+      KC_HOSTNAME: keycloak
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_PROXY: edge
+    ports: ["8080:8080"]
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [xcommerce-network]
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080 || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 15
+      start_period: 30s
+    command: start-dev
+
   # --- OBSERVABILIDADE ---
   kafdrop:
     image: obsidiandynamics/kafdrop:latest
@@ -91,7 +121,7 @@ services:
   # --- MICROSERVIÇOS ---
   auth-service:
     build: ./auth-service
-    container_name: auth-service
+    container_name: xcommerce-auth-service
     environment:
       - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
       - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
@@ -107,7 +137,7 @@ services:
 
   catalog-service:
     build: ./catalog-service
-    container_name: catalog-service
+    container_name: xcommerce-catalog-service
     environment:
       - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
       - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
@@ -123,7 +153,7 @@ services:
 
   inventory-service:
     build: ./inventory-service
-    container_name: inventory-service
+    container_name: xcommerce-inventory-service
     environment:
       - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     healthcheck:
@@ -137,7 +167,7 @@ services:
 
   cart-service:
     build: ./cart-service
-    container_name: cart-service
+    container_name: xcommerce-cart-service
     environment:
       - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     healthcheck:
@@ -151,7 +181,7 @@ services:
 
   order-service:
     build: ./order-service
-    container_name: order-service
+    container_name: xcommerce-order-service
     environment:
       - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     healthcheck:
@@ -166,7 +196,7 @@ services:
 
   user-service:
     build: ./user-service
-    container_name: user-service
+    container_name: xcommerce-user-service
     environment:
       - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     healthcheck:
@@ -180,7 +210,7 @@ services:
 
   payment-service:
     build: ./payment-service
-    container_name: payment-service
+    container_name: xcommerce-payment-service
     environment:
       - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     healthcheck:
@@ -189,12 +219,13 @@ services:
       timeout: 5s
       retries: 12
     depends_on:
+      db: { condition: service_healthy }
       kafka: { condition: service_healthy }
     networks: [xcommerce-network]
 
   notification-service:
     build: ./notification-service
-    container_name: notification-service
+    container_name: xcommerce-notification-service
     environment:
       - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
     healthcheck:
@@ -203,12 +234,13 @@ services:
       timeout: 5s
       retries: 12
     depends_on:
+      db: { condition: service_healthy }
       kafka: { condition: service_healthy }
     networks: [xcommerce-network]
 
   gateway:
     build: ./api-gateway
-    container_name: gateway
+    container_name: xcommerce-gateway
     ports: ["9000:9000"]
     environment:
       - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces

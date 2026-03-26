@@ -3,33 +3,37 @@ package com.xcommerce.cart_service.controller;
 import com.xcommerce.cart_service.dto.CartItemRequest;
 import com.xcommerce.cart_service.dto.CartProductRequest;
 import com.xcommerce.cart_service.model.CartItem;
+import com.xcommerce.cart_service.dto.CartItemResponse;
 import com.xcommerce.cart_service.repository.CartRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/cart")
+@SuppressWarnings("unchecked")
 public class CartController {
 
     @Autowired
     private CartRepository repository;
 
     @GetMapping
-    public List<CartItem> getMyCart(@RequestHeader("X-User-Name") String username) {
-        return repository.findByUsername(username);
+    public List<CartItemResponse> getMyCart(@RequestHeader("X-User-Name") String username) {
+        return repository.findByUsername(username).stream().map(CartItemResponse::from).toList();
     }
 
     @GetMapping("/get")
-    public List<CartItem> getMyCartAlias(@RequestHeader("X-User-Name") String username) {
+    public List<CartItemResponse> getMyCartAlias(@RequestHeader("X-User-Name") String username) {
         return getMyCart(username);
     }
 
     @PostMapping
-    public ResponseEntity<CartItem> addToCart(@Valid @RequestBody CartItemRequest request, @RequestHeader("X-User-Name") String username) {
+    @Transactional
+    public ResponseEntity<CartItemResponse> addToCart(@Valid @RequestBody CartItemRequest request, @RequestHeader("X-User-Name") String username) {
         CartItem item = new CartItem();
         item.setProductId(request.getProductId());
         item.setQuantity(request.getQuantity());
@@ -38,24 +42,27 @@ public class CartController {
         CartItem existing = repository.findByUsernameAndProductId(username, item.getProductId());
         if (existing != null) {
             existing.setQuantity(existing.getQuantity() + item.getQuantity());
-            return ResponseEntity.ok(repository.save(existing));
+            return ResponseEntity.ok(CartItemResponse.from(repository.save(existing)));
         }
 
-        return ResponseEntity.ok(repository.save(item));
+        return ResponseEntity.ok(CartItemResponse.from(repository.save(item)));
     }
 
     @PostMapping("/add")
-    public ResponseEntity<CartItem> addToCartAlias(@Valid @RequestBody CartItemRequest item, @RequestHeader("X-User-Name") String username) {
+    @Transactional
+    public ResponseEntity<CartItemResponse> addToCartAlias(@Valid @RequestBody CartItemRequest item, @RequestHeader("X-User-Name") String username) {
         return addToCart(item, username);
     }
 
     @PatchMapping("/addProduct")
-    public ResponseEntity<CartItem> addProductPatchAlias(@Valid @RequestBody CartItemRequest item, @RequestHeader("X-User-Name") String username) {
+    @Transactional
+    public ResponseEntity<CartItemResponse> addProductPatchAlias(@Valid @RequestBody CartItemRequest item, @RequestHeader("X-User-Name") String username) {
         return addToCart(item, username);
     }
 
     @PatchMapping("/decreaseProductQuantity")
-    public ResponseEntity<List<CartItem>> decreaseProductQuantity(
+    @Transactional
+    public ResponseEntity<List<CartItemResponse>> decreaseProductQuantity(
         @Valid @RequestBody CartProductRequest request,
         @RequestHeader("X-User-Name") String username
     ) {
@@ -73,11 +80,12 @@ public class CartController {
             repository.save(item);
         }
 
-        return ResponseEntity.ok(repository.findByUsername(username));
+        return ResponseEntity.ok(repository.findByUsername(username).stream().map(CartItemResponse::from).toList());
     }
 
     @PatchMapping("/removeProduct")
-    public ResponseEntity<List<CartItem>> removeProduct(
+    @Transactional
+    public ResponseEntity<List<CartItemResponse>> removeProduct(
         @Valid @RequestBody CartProductRequest request,
         @RequestHeader("X-User-Name") String username
     ) {
@@ -87,10 +95,11 @@ public class CartController {
         }
 
         repository.delete(item);
-        return ResponseEntity.ok(repository.findByUsername(username));
+        return ResponseEntity.ok(repository.findByUsername(username).stream().map(CartItemResponse::from).toList());
     }
 
     @DeleteMapping
+    @Transactional
     public ResponseEntity<Void> clearMyCart(@RequestHeader("X-User-Name") String username) {
         repository.deleteAll(repository.findByUsername(username));
         return ResponseEntity.noContent().build();
