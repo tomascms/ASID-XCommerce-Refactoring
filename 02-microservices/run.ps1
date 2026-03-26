@@ -4,27 +4,27 @@
 
 $ErrorActionPreference = "SilentlyContinue"
 
-Write-Host "`n🚀 XCommerce Microservices - Quick Start`n" -ForegroundColor Cyan
+Write-Host "`n[START] XCommerce Microservices - Quick Start`n" -ForegroundColor Cyan
 
 # 1. Check Docker status
-Write-Host "📦 Verificando Docker Compose..." -ForegroundColor Yellow
+Write-Host "[CHECK] Verificando Docker Compose..." -ForegroundColor Yellow
 $dockerStatus = docker-compose ps 2>$null
 if ($dockerStatus -match "exited|Exit") {
-    Write-Host "⚠️  Containers não estão ativos. Iniciando..." -ForegroundColor Yellow
+    Write-Host "[WARN] Containers nao estao ativos. Iniciando..." -ForegroundColor Yellow
     docker-compose up -d 2>&1 | Out-Null
     Start-Sleep -Seconds 3
-    Write-Host "✅ Docker Compose iniciado" -ForegroundColor Green
+    Write-Host "[OK] Docker Compose iniciado" -ForegroundColor Green
 } else {
-    Write-Host "✅ Docker Compose já está ativo" -ForegroundColor Green
+    Write-Host "[OK] Docker Compose ja esta ativo" -ForegroundColor Green
 }
 
 # 2. Kill any existing dashboard processes
-Write-Host "🔄 Limpando processos antigos do dashboard..." -ForegroundColor Yellow
+Write-Host "[CLEAN] Limpando processos antigos do dashboard..." -ForegroundColor Yellow
 Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*dashboard*" } | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 1
 
 # 3. Start dashboard
-Write-Host "🖥️  Iniciando Dashboard..." -ForegroundColor Yellow
+Write-Host "[START] Iniciando Dashboard..." -ForegroundColor Yellow
 $dashboardPath = Join-Path $PSScriptRoot "dashboard"
 Push-Location $dashboardPath
 $dashboardProcess = Start-Process node -ArgumentList "server.js" -PassThru -WindowStyle Minimized
@@ -32,24 +32,24 @@ Pop-Location
 Start-Sleep -Seconds 2
 
 if ($dashboardProcess.HasExited -eq $false) {
-    Write-Host "✅ Dashboard iniciado (PID: $($dashboardProcess.Id))" -ForegroundColor Green
+    Write-Host "[OK] Dashboard iniciado (PID: $($dashboardProcess.Id))" -ForegroundColor Green
 } else {
-    Write-Host "❌ Erro ao iniciar dashboard" -ForegroundColor Red
+    Write-Host "[ERROR] Erro ao iniciar dashboard" -ForegroundColor Red
     exit 1
 }
 
 # 4. Open browser
-Write-Host "🌐 Abrindo browser..." -ForegroundColor Yellow
+Write-Host "[BROWSER] Abrindo browser..." -ForegroundColor Yellow
 Start-Sleep -Seconds 1
 Start-Process "http://localhost:5001"
 
-Write-Host "`n✨ Sistema pronto! Dashboard disponível em http://localhost:5001`n" -ForegroundColor Cyan
-Write-Host "Pressione CTRL+C para sair`n" -ForegroundColor Gray
+Write-Host "`n[READY] Sistema pronto! Dashboard disponivel em http://localhost:5001`n" -ForegroundColor Cyan
+Write-Host "[INFO] Pressione CTRL+C para sair`n" -ForegroundColor Gray
 
 # Keep process alive
 while ($true) {
     if ($dashboardProcess.HasExited) {
-        Write-Host "❌ Dashboard foi encerrado" -ForegroundColor Red
+        Write-Host "[ERROR] Dashboard foi encerrado" -ForegroundColor Red
         break
     }
     Start-Sleep -Seconds 5
