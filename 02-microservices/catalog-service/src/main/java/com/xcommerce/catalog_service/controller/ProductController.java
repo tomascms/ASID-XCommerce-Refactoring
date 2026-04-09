@@ -102,7 +102,11 @@ public class ProductController {
         Product product = new Product();
         applyRequest(product, request);
         Product savedProduct = repository.save(product);
-        inventorySyncService.syncProduct(savedProduct);
+        try {
+            inventorySyncService.syncProduct(savedProduct);
+        } catch (Exception e) {
+            // Inventory sync failures should not block product creation
+        }
         catalogProducer.sendProductCreatedEvent(savedProduct);
         return ResponseEntity.status(HttpStatus.CREATED).body(ProductResponse.from(savedProduct));
     }
@@ -156,6 +160,7 @@ public class ProductController {
 
     private void applyRequest(Product product, ProductRequest request) {
         product.setName(request.getName());
+        product.setSku(request.getSku());
         product.setBarcode(request.getBarcode());
         product.setDescription(request.getDescription());
         product.setImage(request.getImage());

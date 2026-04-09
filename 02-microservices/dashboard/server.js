@@ -124,15 +124,42 @@ function getNextSKU() {
 async function getAuthToken() {
   try {
     if (authToken && tokenExpiry && new Date() < tokenExpiry) {
+      console.log('📌 Using cached auth token');
       return authToken;
     }
-    const response = await axios.post(`${GATEWAY_URL}/auth/login`, ADMIN_CREDENTIALS);
+    console.log(`🔑 Attempting login: POST ${GATEWAY_URL}/auth/login`);
+    console.log('📋 Credentials:', JSON.stringify(ADMIN_CREDENTIALS));
+    
+    const response = await axios.post(`${GATEWAY_URL}/auth/login`, ADMIN_CREDENTIALS, {
+      timeout: 5000,
+      validateStatus: () => true  // Don't throw on any status code
+    });
+    
+    console.log(`📥 Auth response status: ${response.status}`);
+    console.log(`📥 Auth response data:`, response.data);
+    
+    if (response.status !== 200) {
+      console.error(`❌ Auth failed with status ${response.status}: ${JSON.stringify(response.data)}`);
+      return null;
+    }
+    
+    if (!response.data.token) {
+      console.error('❌ No token in auth response:', response.data);
+      return null;
+    }
+    
     authToken = response.data.token;
     tokenExpiry = new Date(Date.now() + 1.5 * 60 * 60 * 1000);
-    console.log('✅ New auth token obtained');
+    console.log('✅ New auth token obtained successfully');
     return authToken;
   } catch (error) {
     console.error('❌ Failed to get auth token:', error.message);
+    console.error('Error details:', error.toString());
+    if (error.code) console.error('Error code:', error.code);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
     return null;
   }
 }

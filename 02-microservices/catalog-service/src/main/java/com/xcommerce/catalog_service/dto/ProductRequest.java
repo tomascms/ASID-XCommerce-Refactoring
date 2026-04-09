@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public class ProductRequest {
 
     private String name;
+    private String sku;
     private String barcode;
     private String description;
     private String image;
@@ -20,6 +21,8 @@ public class ProductRequest {
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    public String getSku() { return sku; }
+    public void setSku(String sku) { this.sku = sku; }
     public String getBarcode() { return barcode; }
     public void setBarcode(String barcode) { this.barcode = barcode; }
     public String getDescription() { return description; }

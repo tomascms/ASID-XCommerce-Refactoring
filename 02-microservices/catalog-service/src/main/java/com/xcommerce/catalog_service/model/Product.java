@@ -17,6 +17,9 @@ public class Product {
     @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false, unique = true)
+    private String sku;
+
     private String barcode;
 
     @Column(length = 1000)
@@ -52,6 +55,8 @@ public class Product {
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    public String getSku() { return sku; }
+    public void setSku(String sku) { this.sku = sku; }
     public String getBarcode() { return barcode; }
     public void setBarcode(String barcode) { this.barcode = barcode; }
     public String getDescription() { return description; }
