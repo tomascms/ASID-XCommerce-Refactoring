@@ -1,0 +1,1 @@
+﻿Iteration,TestCase,Architecture,LatencyMin,LatencyMax,LatencyAvg,LatencyStdDev,LatencyP50,LatencyP75,LatencyP90,LatencyP95,LatencyP99,TotalRequests,Throughput,SuccessCount,ErrorCount,TimeoutCount,SuccessRate,CpuPercent,MemoryMB

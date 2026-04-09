@@ -1,0 +1,59 @@
+# Prometheus Configuration - Scenario A3 (14 Ultra-Fine Services)
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    scenario: "scenario-3-ultra-fine"
+
+scrape_configs:
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api_gateway:8080']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 5s
+
+  - job_name: 'auth-service'
+    static_configs:
+      - targets: ['auth_service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  - job_name: 'user-service'
+    static_configs:
+      - targets: ['user_service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  - job_name: 'product-service'
+    static_configs:
+      - targets: ['product_service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  - job_name: 'category-service'
+    static_configs:
+      - targets: ['category_service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  - job_name: 'cart-service'
+    static_configs:
+      - targets: ['cart_service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  - job_name: 'order-service'
+    static_configs:
+      - targets: ['order_service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  - job_name: 'inventory-service'
+    static_configs:
+      - targets: ['inventory_service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  - job_name: 'payment-service'
+    static_configs:
+      - targets: ['payment_service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['notification_service:8080']
+    metrics_path: '/actuator/prometheus'

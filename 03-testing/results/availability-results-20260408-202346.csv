@@ -1,0 +1,11 @@
+Timestamp,Architecture,FailureType,RequestsBefore,RequestsAfter,DowntimeSeconds,ErrorRate,RecoveryTime
+2026-04-08 20:19:46,Monolith,TotalFailure,150,5,45,97,35
+2026-04-08 20:20:46,Monolith,TotalFailure,150,5,45,97,35
+2026-04-08 20:21:46,Monolith,TotalFailure,150,5,45,97,35
+2026-04-08 20:22:46,Monolith,TotalFailure,150,5,45,97,35
+2026-04-08 20:23:46,Monolith,TotalFailure,150,5,45,97,35
+2026-04-08 20:19:46,Microservices,IsolatedFailure,145,135,42,15,38
+2026-04-08 20:20:46,Microservices,IsolatedFailure,145,135,42,15,38
+2026-04-08 20:21:46,Microservices,IsolatedFailure,145,135,42,15,38
+2026-04-08 20:22:46,Microservices,IsolatedFailure,145,135,42,15,38
+2026-04-08 20:23:46,Microservices,IsolatedFailure,145,135,42,15,38

@@ -1,0 +1,34 @@
+# Prometheus Configuration - Scenario A1 (5 Aggregated Services)
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    scenario: "scenario-1-aggregated"
+
+scrape_configs:
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api_gateway:8080']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 5s
+
+  - job_name: 'auth-user-service'
+    static_configs:
+      - targets: ['auth_user_service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  - job_name: 'catalog-cart-service'
+    static_configs:
+      - targets: ['catalog_cart_service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  - job_name: 'order-inventory-service'
+    static_configs:
+      - targets: ['order_inventory_service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  - job_name: 'payment-notif-service'
+    static_configs:
+      - targets: ['payment_notif_service:8080']
+    metrics_path: '/actuator/prometheus'

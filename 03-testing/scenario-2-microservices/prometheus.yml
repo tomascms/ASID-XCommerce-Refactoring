@@ -1,0 +1,70 @@
+# Prometheus Configuration - XCommerce Scenario 2 (9 Microservices)
+# Scrape metrics from all services via Spring Boot Actuator /actuator/prometheus endpoint
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    scenario: "scenario-2-microservices"
+    timestamp: "2026-04-07"
+
+scrape_configs:
+  # API Gateway
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:8080']
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 5s
+
+  # Auth Service
+  - job_name: 'auth-service'
+    static_configs:
+      - targets: ['auth-service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  # Catalog Service
+  - job_name: 'catalog-service'
+    static_configs:
+      - targets: ['catalog-service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  # Cart Service
+  - job_name: 'cart-service'
+    static_configs:
+      - targets: ['cart-service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  # Order Service
+  - job_name: 'order-service'
+    static_configs:
+      - targets: ['order-service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  # Inventory Service
+  - job_name: 'inventory-service'
+    static_configs:
+      - targets: ['inventory-service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  # Payment Service
+  - job_name: 'payment-service'
+    static_configs:
+      - targets: ['payment-service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  # User Service
+  - job_name: 'user-service'
+    static_configs:
+      - targets: ['user-service:8080']
+    metrics_path: '/actuator/prometheus'
+
+  # Notification Service
+  - job_name: 'notification-service'
+    static_configs:
+      - targets: ['notification-service:8080']
+    metrics_path: '/actuator/prometheus'
+
+# Alerting rules (optional, for future use)
+rule_files: []
+alerting:
+  alertmanagers: []

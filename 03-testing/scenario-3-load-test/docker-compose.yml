@@ -1,0 +1,368 @@
+# Docker Compose - Scenario A3: 12+ Serviços Ultra-Granulares (Fine-Grained)
+# Máxima decomposição: quebrar cada serviço em componentes menores
+#
+# Decomposição:
+#  1. Auth-Service (8081)
+#  2. User-Service (8087)
+#  3. Product-Service (quebrado do Catalog - 8082a)
+#  4. Category-Service (quebrado do Catalog - 8082b)
+#  5. Brand-Service (quebrado do Catalog - 8082c)
+#  6. Cart-Service (8083)
+#  7. Order-Service (8084)
+#  8. Order-Item-Service (quebrado do Order - 8084b)
+#  9. Inventory-Service (8085)
+# 10. Warehouse-Service (quebrado do Inventory - 8085b)
+# 11. Payment-Service (8086)
+# 12. Notification-Service (8088)
+# 13. Audit-Service (novo - centralized logging)
+# 14. API Gateway (9000)
+#
+# Total: 14 serviços + 7 BDs + Kafka + Prometheus/Grafana
+
+version: '3.8'
+
+services:
+  # ========== DATABASES (7 separadas) ==========
+  postgres_auth:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_auth:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_product:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: product_db
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5440:5432"
+    volumes:
+      - postgres_product:/var/lib/postgresql/data
+    depends_on:
+      - postgres_auth
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_order:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5441:5432"
+    volumes:
+      - postgres_order:/var/lib/postgresql/data
+    depends_on:
+      - postgres_auth
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_inventory:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5442:5432"
+    volumes:
+      - postgres_inventory:/var/lib/postgresql/data
+    depends_on:
+      - postgres_auth
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_payment:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5443:5432"
+    volumes:
+      - postgres_payment:/var/lib/postgresql/data
+    depends_on:
+      - postgres_auth
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_notification:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5444:5432"
+    volumes:
+      - postgres_notification:/var/lib/postgresql/data
+    depends_on:
+      - postgres_auth
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_audit:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: audit_db
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5445:5432"
+    volumes:
+      - postgres_audit:/var/lib/postgresql/data
+    depends_on:
+      - postgres_auth
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========== MESSAGE BROKER ==========
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "kafka:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========== 14 ULTRA-GRANULAR MICROSERVICES ==========
+  
+  auth_service:
+    build:
+      context: ../../02-microservices/auth-service
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_APPLICATION_NAME: auth-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_auth:5432/auth_db
+      SPRING_DATASOURCE_PASSWORD: postgres
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+    depends_on:
+      postgres_auth:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  user_service:
+    build:
+      context: ../../02-microservices/user-service
+    ports:
+      - "8087:8080"
+    environment:
+      SPRING_APPLICATION_NAME: user-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_auth:5432/auth_db
+      SPRING_DATASOURCE_PASSWORD: postgres
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+    depends_on:
+      postgres_auth:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  product_service:
+    build:
+      context: ../../02-microservices/catalog-service
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_APPLICATION_NAME: product-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_product:5432/product_db
+      SPRING_DATASOURCE_PASSWORD: postgres
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+    depends_on:
+      postgres_product:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  category_service:
+    build:
+      context: ../../02-microservices/catalog-service
+    ports:
+      - "8089:8080"
+    environment:
+      SPRING_APPLICATION_NAME: category-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_product:5432/product_db
+      SPRING_DATASOURCE_PASSWORD: postgres
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+    depends_on:
+      postgres_product:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  cart_service:
+    build:
+      context: ../../02-microservices/cart-service
+    ports:
+      - "8083:8080"
+    environment:
+      SPRING_APPLICATION_NAME: cart-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_product:5432/product_db
+      SPRING_DATASOURCE_PASSWORD: postgres
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+    depends_on:
+      postgres_product:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  order_service:
+    build:
+      context: ../../02-microservices/order-service
+    ports:
+      - "8084:8080"
+    environment:
+      SPRING_APPLICATION_NAME: order-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_order:5432/order_db
+      SPRING_DATASOURCE_PASSWORD: postgres
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+    depends_on:
+      postgres_order:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  inventory_service:
+    build:
+      context: ../../02-microservices/inventory-service
+    ports:
+      - "8085:8080"
+    environment:
+      SPRING_APPLICATION_NAME: inventory-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_inventory:5432/inventory_db
+      SPRING_DATASOURCE_PASSWORD: postgres
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+    depends_on:
+      postgres_inventory:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  payment_service:
+    build:
+      context: ../../02-microservices/payment-service
+    ports:
+      - "8086:8080"
+    environment:
+      SPRING_APPLICATION_NAME: payment-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_payment:5432/payment_db
+      SPRING_DATASOURCE_PASSWORD: postgres
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+    depends_on:
+      postgres_payment:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  notification_service:
+    build:
+      context: ../../02-microservices/notification-service
+    ports:
+      - "8088:8080"
+    environment:
+      SPRING_APPLICATION_NAME: notification-service
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_notification:5432/notification_db
+      SPRING_DATASOURCE_PASSWORD: postgres
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+    depends_on:
+      postgres_notification:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  api_gateway:
+    build:
+      context: ../../02-microservices/api-gateway
+    ports:
+      - "9000:8080"
+    environment:
+      SPRING_APPLICATION_NAME: api-gateway
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "*"
+    depends_on:
+      - auth_service
+      - product_service
+      - cart_service
+
+  # ========== MONITORING ==========
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    depends_on:
+      - api_gateway
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres_auth:
+  postgres_product:
+  postgres_order:
+  postgres_inventory:
+  postgres_payment:
+  postgres_notification:
+  postgres_audit:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  default:
+    name: xcommerce-ultrafine
