@@ -96,7 +96,7 @@ let userSessions = {};
 
 // Admin credentials
 const ADMIN_CREDENTIALS = {
-  username: 'admin@xcommerce.com',
+  username: 'admin',
   password: '123456'
 };
 
