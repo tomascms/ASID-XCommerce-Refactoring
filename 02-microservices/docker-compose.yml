@@ -243,7 +243,6 @@ services:
     container_name: xcommerce-gateway
     ports: ["9000:9000"]
     environment:
-      - MANAGEMENT_OTLP_TRACING_ENDPOINT=http://jaeger:4318/v1/traces
       - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:9000/actuator/health || exit 1"]
@@ -251,12 +250,12 @@ services:
       timeout: 5s
       retries: 12
     depends_on:
-      auth-service: { condition: service_healthy }
-      catalog-service: { condition: service_healthy }
-      cart-service: { condition: service_healthy }
-      order-service: { condition: service_healthy }
-      inventory-service: { condition: service_healthy }
-      user-service: { condition: service_healthy }
+      auth-service: { condition: service_started }
+      catalog-service: { condition: service_started }
+      cart-service: { condition: service_started }
+      order-service: { condition: service_started }
+      inventory-service: { condition: service_started }
+      user-service: { condition: service_started }
     networks: [xcommerce-network]
 
 networks:
