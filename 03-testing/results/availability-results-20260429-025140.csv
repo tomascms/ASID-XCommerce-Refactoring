@@ -1,0 +1,3 @@
+﻿Timestamp,Architecture,FailureType,RequestsBefore,RequestsAfter,DowntimeSeconds,ErrorRate,RecoveryTime
+2026-04-29 02:52:47,Monolith,Total Failure,60,60,65.26,0%,35.12
+2026-04-29 02:53:28,Microservices,Isolated Failure (Catalog),7,7,38.18,0%,6.54

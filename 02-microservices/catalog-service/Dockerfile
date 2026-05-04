@@ -1,4 +1,4 @@
-FROM maven:3.9.9-eclipse-temurin-21-alpine AS build
+FROM maven:3.9.15-eclipse-temurin-25-alpine AS build
 WORKDIR /workspace
 
 COPY .mvn .mvn
@@ -9,7 +9,7 @@ COPY src src
 
 RUN chmod +x mvnw && ./mvnw -q -DskipTests package
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /
 VOLUME /tmp
 COPY --from=build /workspace/target/*.jar app.jar

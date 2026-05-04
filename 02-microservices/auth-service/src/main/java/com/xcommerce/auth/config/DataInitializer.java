@@ -29,33 +29,36 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         log.info("🔍 Verificando base de dados de autenticação...");
-        
-        if (userRepository.count() == 0) {
-            User admin = new User();
-            admin.setUsername("admin@xcommerce.com");
-            admin.setEmail("admin@xcommerce.com");
-            admin.setPassword(passwordEncoder.encode("123456"));
-            admin.setRole("ADMIN");
-            admin.setActive(true);
-            
-            userRepository.save(admin);
-            try {
-                userSyncService.sync(new UserSyncRequest(
-                    admin.getUsername(),
-                    admin.getEmail(),
-                    admin.getPassword(),
-                    admin.getRole(),
-                    admin.getActive(),
-                    "Admin",
-                    "XCommerce",
-                    "HQ"
-                ));
-            } catch (Exception ignored) {
-                log.warn("⚠️ Warning ao sincronizar admin user");
-            }
-            log.info("✅ Utilizador Admin criado com sucesso!");
+
+        User admin = userRepository.findByUsernameOrEmail("admin", "admin@xcommerce.com");
+        if (admin == null) {
+            admin = new User();
+            log.info("➕ Admin nao encontrado. Criando utilizador admin padrao.");
         } else {
-            log.info("✓ Base de dados já contém utilizadores.");
+            log.info("♻️ Admin encontrado. Garantindo credenciais e role corretas.");
         }
+
+        admin.setUsername("admin");
+        admin.setEmail("admin@xcommerce.com");
+        admin.setPassword(passwordEncoder.encode("123456"));
+        admin.setRole("ADMIN");
+        admin.setActive(true);
+
+        userRepository.save(admin);
+        try {
+            userSyncService.sync(new UserSyncRequest(
+                admin.getUsername(),
+                admin.getEmail(),
+                admin.getPassword(),
+                admin.getRole(),
+                admin.getActive(),
+                "Admin",
+                "XCommerce",
+                "HQ"
+            ));
+        } catch (Exception ignored) {
+            log.warn("⚠️ Warning ao sincronizar admin user");
+        }
+        log.info("✅ Utilizador Admin garantido com role ADMIN.");
     }
 } 

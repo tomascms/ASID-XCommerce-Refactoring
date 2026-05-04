@@ -1,0 +1,3 @@
+﻿Timestamp,Architecture,TestDuration,TotalRequests,AvgCPU,AvgMemory,CPUPerRequest,MemoryPerRequest,CostEstimate
+2026-04-29 12:48:28,Monolith,60,9,0,0,0,0,0
+2026-04-29 12:48:38,Microservices,60,9,0.08,0.92,0.008889,0.102222,0.00024724

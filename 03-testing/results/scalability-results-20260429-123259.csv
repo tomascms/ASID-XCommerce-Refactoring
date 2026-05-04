@@ -1,0 +1,4 @@
+﻿Timestamp,Architecture,ConcurrentRequests,TotalRequests,SuccessCount,ErrorCount,AvgLatency,P99Latency,Throughput,CPU,Memory
+2026-04-29 12:33:36,Microservices,2,2988,2988,0,3.18,7.55,86.81,0.25,0.92
+2026-04-29 12:34:45,Microservices,4,5874,5874,0,3.23,8.53,96.03,0.44,0.92
+2026-04-29 12:36:23,Microservices,6,8604,8604,0,3.32,8.55,94.44,0.14,0.92

@@ -1,0 +1,9 @@
+{
+  "properties": [
+    {
+      "name": "jwt.secret",
+      "type": "java.lang.String",
+      "description": "Shared JWT signing secret used by the API gateway."
+    }
+  ]
+}

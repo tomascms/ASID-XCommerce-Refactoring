@@ -1,7 +1,7 @@
 # ============================================================
-# TESTE DE COST - Medir CPU/RAM por Requisição
+# TESTE DE COST - Medir CPU/RAM por Requisicao
 # ============================================================
-# Objetivo: Comparar eficiência de recursos entre arquiteturas
+# Objetivo: Comparar eficiencia de recursos entre arquiteturas
 
 param(
     [int]$TestDurationSeconds = 60,
@@ -20,7 +20,7 @@ $resultsFile = "$ResultsDir/cost-results-$timestamp.csv"
 "Timestamp,Architecture,TestDuration,TotalRequests,AvgCPU,AvgMemory,CPUPerRequest,MemoryPerRequest,CostEstimate" | Out-File -FilePath $resultsFile -Encoding UTF8
 
 # ============================================================
-# Função para medir recursos durante teste
+# Funcao para medir recursos durante teste
 # ============================================================
 function Measure-ArchitectureCost {
     param(
@@ -31,14 +31,14 @@ function Measure-ArchitectureCost {
         [int]$RequestsPerSecond
     )
     
-    Write-Host "`n⏱️  Medindo COST: $Architecture"
+    Write-Host "`n[INFO] Medindo COST: $Architecture"
     Write-Host "======================================"
     
     # Reset stats
     docker stats --no-stream $Containers 2>$null | Out-Null
     Start-Sleep -Seconds 2
     
-    # Iniciar requisições em background
+    # Iniciar requisicoes em background
     $jobs = @()
     $totalRequests = 0
     
@@ -48,7 +48,11 @@ function Measure-ArchitectureCost {
         for ($i = 0; $i -lt $RequestsPerSecond; $i++) {
             $job = Start-Job -ScriptBlock {
                 param($ep)
-                curl -s -o /dev/null http://localhost:$ep 2>$null
+                try {
+                    Invoke-WebRequest -Uri "http://localhost:$ep" -UseBasicParsing -Method Get -TimeoutSec 10 | Out-Null
+                } catch {
+                    # Ignore request failures for cost workload generation
+                }
             } -ArgumentList $Endpoint
             $jobs += $job
             $totalRequests++
@@ -84,7 +88,7 @@ function Measure-ArchitectureCost {
         $avgMemory = $avgMemory / $containerCount
     }
     
-    # Calcular cost por requisição
+    # Calcular cost por requisicao
     $cpuPerRequest = if ($totalRequests -gt 0) { $avgCPU / $totalRequests } else { 0 }
     $memPerRequest = if ($totalRequests -gt 0) { $avgMemory / $totalRequests } else { 0 }
     
@@ -95,12 +99,12 @@ function Measure-ArchitectureCost {
     $memCostPerHour = ($avgMemory / 1024) * 0.0116
     $costPerRequest = (($cpuCostPerHour + $memCostPerHour) / 3600) / $totalRequests * 1000  # em milisegundos
     
-    Write-Host "✓ Total de Requisições: $totalRequests"
-    Write-Host "✓ CPU Média: $([Math]::Round($avgCPU, 2))%"
-    Write-Host "✓ Memória Média: $([Math]::Round($avgMemory, 2))MiB"
-    Write-Host "✓ CPU por Requisição: $([Math]::Round($cpuPerRequest, 6))%"
-    Write-Host "✓ Memória por Requisição: $([Math]::Round($memPerRequest, 6))MiB"
-    Write-Host "💰 Custo Estimado: \$$([Math]::Round($costPerRequest, 8)) por requisição"
+    Write-Host "[OK] Total de Requisicoes: $totalRequests"
+    Write-Host ("[OK] CPU Media: {0}%" -f ([Math]::Round($avgCPU, 2)))
+    Write-Host ("[OK] Memoria Media: {0}MiB" -f ([Math]::Round($avgMemory, 2)))
+    Write-Host ("[OK] CPU por Requisicao: {0}%" -f ([Math]::Round($cpuPerRequest, 6)))
+    Write-Host ("[OK] Memoria por Requisicao: {0}MiB" -f ([Math]::Round($memPerRequest, 6)))
+    Write-Host ("[INFO] Custo Estimado: $" + ([Math]::Round($costPerRequest, 8)))
     
     return @{
         Architecture = $Architecture
@@ -114,39 +118,39 @@ function Measure-ArchitectureCost {
 }
 
 # ============================================================
-# TESTE 1: Monólito - Cost
+# TESTE 1: Monolito - Cost
 # ============================================================
 $monoResult = Measure-ArchitectureCost -Architecture "Monolith" -Endpoint "8080" -Containers "xcommerce-monolith" -DurationSeconds $TestDurationSeconds -RequestsPerSecond $RequestsPerSecond
 
 "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss'),Monolith,60,$($monoResult.TotalRequests),$([Math]::Round($monoResult.AvgCPU, 2)),$([Math]::Round($monoResult.AvgMemory, 2)),$([Math]::Round($monoResult.CPUPerRequest, 6)),$([Math]::Round($monoResult.MemPerRequest, 6)),$([Math]::Round($monoResult.Cost, 8))" | Add-Content $resultsFile
 
 # ============================================================
-# TESTE 2: Microserviços - Cost
+# TESTE 2: Microservices - Cost
 # ============================================================
 $microContainers = @("xcommerce-gateway", "xcommerce-auth-service", "xcommerce-catalog-service", "xcommerce-cart-service")
-$microResult = Measure-ArchitectureCost -Architecture "Microservices" -Endpoint "9000/api/products" -Containers $microContainers -DurationSeconds $TestDurationSeconds -RequestsPerSecond $RequestsPerSecond
+$microResult = Measure-ArchitectureCost -Architecture "Microservices" -Endpoint "9000/products" -Containers $microContainers -DurationSeconds $TestDurationSeconds -RequestsPerSecond $RequestsPerSecond
 
 "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss'),Microservices,60,$($microResult.TotalRequests),$([Math]::Round($microResult.AvgCPU, 2)),$([Math]::Round($microResult.AvgMemory, 2)),$([Math]::Round($microResult.CPUPerRequest, 6)),$([Math]::Round($microResult.MemPerRequest, 6)),$([Math]::Round($microResult.Cost, 8))" | Add-Content $resultsFile
 
 # ============================================================
-# Comparativa de Custo
+# Comparativa de custo
 # ============================================================
-Write-Host "`n💰 ANÁLISE DE CUSTO"
+Write-Host "`n[INFO] ANALISE DE CUSTO"
 Write-Host "==================="
 
 $monoCost = $monoResult.Cost
 $microCost = $microResult.Cost
-$delta = (($microCost - $monoCost) / $monoCost) * 100
+$delta = if ($monoCost -ne 0) { (($microCost - $monoCost) / $monoCost) * 100 } else { 0 }
 
-Write-Host "Monólito:      \$$([Math]::Round($monoCost, 8)) por requisição"
-Write-Host "Microserviços: \$$([Math]::Round($microCost, 8)) por requisição"
-Write-Host "Delta:         $([Math]::Round($delta, 2))%"
+Write-Host ("Monolito:      $" + ([Math]::Round($monoCost, 8)))
+Write-Host ("Microservices: $" + ([Math]::Round($microCost, 8)))
+Write-Host ("Delta:         {0}%" -f ([Math]::Round($delta, 2)))
 
 if ($delta -gt 0) {
-    Write-Host "❌ Microserviços é $([Math]::Round($delta, 2))% MAIS CARO"
+    Write-Host "[WARN] Microservices e $([Math]::Round($delta, 2))% MAIS CARO"
 } else {
-    Write-Host "✓ Microserviços é $([Math]::Round([Math]::Abs($delta), 2))% MAIS BARATO"
+    Write-Host "[OK] Microservices e $([Math]::Round([Math]::Abs($delta), 2))% MAIS BARATO"
 }
 
-Write-Host "`n✅ Testes de Cost completos!"
-Write-Host "📁 Resultados: $resultsFile"
+Write-Host "`n[OK] Testes de Cost completos!"
+Write-Host "[OK] Resultados: $resultsFile"

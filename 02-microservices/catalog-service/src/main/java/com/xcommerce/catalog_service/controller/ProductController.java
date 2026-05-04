@@ -20,12 +20,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/products")
-@SuppressWarnings("unchecked")
 public class ProductController {
 
     @Autowired
@@ -90,7 +91,7 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProductResponse> getById(@PathVariable Long id) {
+    public ResponseEntity<ProductResponse> getById(@PathVariable long id) {
         return repository.findById(id)
             .map(product -> ResponseEntity.ok(ProductResponse.from(product)))
             .orElse(ResponseEntity.notFound().build());
@@ -113,34 +114,46 @@ public class ProductController {
 
     @PutMapping("/{id}")
     @Transactional
-    public ResponseEntity<ProductResponse> update(@PathVariable Long id, @RequestBody ProductRequest productDetails) {
-        return repository.findById(id).map(product -> {
-            applyRequest(product, productDetails);
-            Product updatedProduct = repository.save(product);
+    public ResponseEntity<ProductResponse> update(@PathVariable long id, @RequestBody ProductRequest productDetails) {
+        Optional<Product> maybeProduct = repository.findById(id);
+        if (maybeProduct.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Product product = maybeProduct.get();
+        applyRequest(product, productDetails);
+        Product updatedProduct = Objects.requireNonNull(repository.save(Objects.requireNonNull(product)));
+        try {
             inventorySyncService.syncProduct(updatedProduct);
-            catalogProducer.sendProductCreatedEvent(updatedProduct);
-            return ResponseEntity.ok(ProductResponse.from(updatedProduct));
-        }).orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            // Inventory sync failures should not block product updates
+        }
+        catalogProducer.sendProductCreatedEvent(updatedProduct);
+        return ResponseEntity.ok(ProductResponse.from(updatedProduct));
     }
 
     @DeleteMapping("/{id}")
     @Transactional
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        return repository.findById(id).map(product -> {
-            repository.delete(product);
-            return ResponseEntity.noContent().<Void>build();
-        }).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Void> delete(@PathVariable long id) {
+        Optional<Product> maybeProduct = repository.findById(id);
+        if (maybeProduct.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Product productToDelete = maybeProduct.get();
+        repository.delete(Objects.requireNonNull(productToDelete));
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/price")
-    public BigDecimal getProductPrice(@PathVariable Long id) {
+    public BigDecimal getProductPrice(@PathVariable long id) {
         return repository.findById(id)
             .map(Product::getPrice)
             .orElseThrow(() -> new RuntimeException("Produto nao encontrado"));
     }
 
     @GetMapping("/{id}/reviews")
-    public ResponseEntity<List<ReviewResponse>> getReviews(@PathVariable Long id) {
+    public ResponseEntity<List<ReviewResponse>> getReviews(@PathVariable long id) {
         if (!repository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
@@ -149,13 +162,17 @@ public class ProductController {
     }
 
     @PostMapping("/{id}/reviews")
-    public ResponseEntity<ReviewResponse> createReview(@PathVariable Long id, @RequestBody Review review) {
-        return repository.findById(id).map(product -> {
-            review.setId(null);
-            review.setProduct(product);
-            Review saved = reviewRepository.save(review);
-            return ResponseEntity.status(HttpStatus.CREATED).body(ReviewResponse.from(saved));
-        }).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<ReviewResponse> createReview(@PathVariable long id, @RequestBody Review review) {
+        Optional<Product> maybeProduct = repository.findById(id);
+        if (maybeProduct.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Product product = maybeProduct.get();
+        review.setId(null);
+        review.setProduct(Objects.requireNonNull(product));
+        Review saved = reviewRepository.save(review);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ReviewResponse.from(saved));
     }
 
     private void applyRequest(Product product, ProductRequest request) {

@@ -1,0 +1,11 @@
+﻿Timestamp,20260504-131641
+TestDuration,60s
+RequestsPerSecond,20
+TotalRequests,11674
+SuccessfulRequests,11674
+FailedRequests,0
+SuccessRate,100%
+AverageResponseTime,1.35ms
+MaxResponseTime,17.01ms
+MinResponseTime,0ms
+Throughput,194.35eq/s

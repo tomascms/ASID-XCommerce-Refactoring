@@ -1,0 +1,7 @@
+﻿Timestamp,Architecture,ConcurrentRequests,TotalRequests,SuccessCount,ErrorCount,AvgLatency,P99Latency,Throughput,CPU,Memory
+2026-04-29 02:24:53,Monolith,5,,0,,2.42,33.56,0,0,0
+2026-04-29 02:29:59,Monolith,10,,0,,3.94,72.05,0,0,0
+2026-04-29 02:34:32,Monolith,15,,0,,7.17,108.19,0,0,0
+2026-04-29 02:39:10,Monolith,20,,0,,9.34,141.17,0,0,0
+2026-04-29 02:43:30,Monolith,25,,0,,13.49,171.79,0,0,0
+2026-04-29 02:48:44,Monolith,30,,0,,14.63,206.8,0,0,0

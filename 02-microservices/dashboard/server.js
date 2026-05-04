@@ -9,90 +9,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// ==================== DATA PERSISTENCE ====================
-const DATA_DIR = path.join(__dirname, 'data');
-
-// Create data directory if it doesn't exist
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-const BRANDS_FILE = path.join(DATA_DIR, 'brands.json');
-const CATEGORIES_FILE = path.join(DATA_DIR, 'categories.json');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
-const METADATA_FILE = path.join(DATA_DIR, 'metadata.json');
-
-// Initialize JSON files if they don't exist
-function initializeDataFile(filepath, defaultData) {
-  if (!fs.existsSync(filepath)) {
-    fs.writeFileSync(filepath, JSON.stringify(defaultData, null, 2));
-  }
-}
-
-function loadJSON(filepath) {
-  try {
-    const data = fs.readFileSync(filepath, 'utf8');
-    return JSON.parse(data);
-  } catch (e) {
-    console.error(`Error loading ${filepath}:`, e.message);
-    return null;
-  }
-}
-
-function saveJSON(filepath, data) {
-  try {
-    fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
-    return true;
-  } catch (e) {
-    console.error(`Error saving ${filepath}:`, e.message);
-    return false;
-  }
-}
-
-// Initialize files with default data
-initializeDataFile(BRANDS_FILE, [
-  { id: 1, name: 'HyperX' },
-  { id: 2, name: 'Logitech' }
-]);
-
-initializeDataFile(CATEGORIES_FILE, [
-  { id: 1, name: 'gaming keyboard' },
-  { id: 2, name: 'gaming mouse' },
-  { id: 3, name: 'gaming headset' }
-]);
-
-initializeDataFile(USERS_FILE, {
-  'admin@xcommerce.com': { password: '123456', role: 'admin', name: 'Admin User' },
-  'demo@xcommerce.com': { password: 'demo123', role: 'user', name: 'Demo User' }
-});
-
-initializeDataFile(ORDERS_FILE, {});
-
-initializeDataFile(METADATA_FILE, {
-  nextBrandId: 3,
-  nextCategoryId: 4,
-  nextOrderId: 100,
-  nextSKU: 1
-});
-
-// Load data
-let brands = loadJSON(BRANDS_FILE) || [];
-let categories = loadJSON(CATEGORIES_FILE) || [];
-let users = loadJSON(USERS_FILE) || {};
-let orderTracker = loadJSON(ORDERS_FILE) || {};
-let metadata = loadJSON(METADATA_FILE) || { nextBrandId: 3, nextCategoryId: 4, nextOrderId: 100, nextSKU: 1 };
-
-console.log('📋 Data loaded at startup:');
-console.log('  Brands:', brands.length, '| Next ID:', metadata.nextBrandId);
-console.log('  Categories:', categories.length, '| Next ID:', metadata.nextCategoryId);
-console.log('  Users:', Object.keys(users).length);
-console.log('  Metadata:', metadata);
-
 const GATEWAY_URL = 'http://localhost:9000';
 let authToken = null;
 let tokenExpiry = null;
 let userSessions = {};
+const metadata = {
+  nextSKU: 1
+};
 
 // Admin credentials
 const ADMIN_CREDENTIALS = {
@@ -100,25 +23,41 @@ const ADMIN_CREDENTIALS = {
   password: '123456'
 };
 
-// ==================== UTILITY FUNCTIONS ====================
-function persistData() {
-  try {
-    if (!saveJSON(BRANDS_FILE, brands)) throw new Error('Failed to save brands');
-    if (!saveJSON(CATEGORIES_FILE, categories)) throw new Error('Failed to save categories');
-    if (!saveJSON(USERS_FILE, users)) throw new Error('Failed to save users');
-    if (!saveJSON(ORDERS_FILE, orderTracker)) throw new Error('Failed to save orders');
-    if (!saveJSON(METADATA_FILE, metadata)) throw new Error('Failed to save metadata');
-  } catch (error) {
-    console.error('Data persistence error:', error.message);
-    throw error;
-  }
-}
-
 function getNextSKU() {
   const sku = String(metadata.nextSKU).padStart(8, '0');
   metadata.nextSKU++;
-  persistData();
   return sku;
+}
+
+async function gatewayRequest(method, endpoint, { body, token, headers = {}, timeout = 8000 } = {}) {
+  return axios.request({
+    method,
+    url: `${GATEWAY_URL}${endpoint}`,
+    data: body,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...headers
+    },
+    timeout,
+    validateStatus: () => true
+  });
+}
+
+function normalizeFrontendRole(role) {
+  const normalized = (role || '').toLowerCase();
+  return normalized === 'superadmin' ? 'admin' : (normalized || 'user');
+}
+
+async function decodeTokenDetails(token) {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString('utf8'));
+    return {
+      username: payload.sub || payload.username || payload.email || '',
+      role: payload.role || payload.roles?.[0] || 'USER'
+    };
+  } catch {
+    return { username: '', role: 'USER' };
+  }
 }
 
 async function getAuthToken() {
@@ -165,180 +104,249 @@ async function getAuthToken() {
 }
 
 // ==================== AUTHENTICATION ====================
-function signupUser(email, password, name, role = 'user') {
-  if (users[email]) {
-    return { success: false, message: 'User already exists' };
+async function signupUser(email, password, name) {
+  const response = await gatewayRequest('post', '/auth/register', {
+    body: {
+      username: email,
+      email,
+      password,
+      firstName: name,
+      lastName: '',
+      address: ''
+    }
+  });
+
+  if (response.status >= 200 && response.status < 300) {
+    return { success: true, message: 'Signup successful', email };
   }
-  users[email] = { password, role, name: name || email.split('@')[0] };
-  persistData();
-  return { success: true, message: 'Signup successful', email: email };
+
+  return { success: false, message: typeof response.data === 'string' ? response.data : response.data?.message || 'Signup failed' };
 }
 
-function loginUser(email, password) {
-  const user = users[email];
-  if (!user || user.password !== password) {
+async function loginUser(email, password) {
+  const response = await gatewayRequest('post', '/auth/login', {
+    body: { username: email, password }
+  });
+
+  if (response.status < 200 || response.status >= 300 || !response.data?.token) {
     return { success: false, message: 'Invalid credentials' };
   }
-  const sessionToken = Buffer.from(email + ':' + Date.now()).toString('base64');
-  userSessions[email] = sessionToken;
+
+  const token = response.data.token;
+  const decoded = await decodeTokenDetails(token);
+  let displayName = email;
+
+  try {
+    const userResponse = await gatewayRequest('get', `/users/by-username/${encodeURIComponent(decoded.username || email)}`, { token });
+    if (userResponse.status >= 200 && userResponse.status < 300) {
+      displayName = [userResponse.data?.firstName, userResponse.data?.lastName].filter(Boolean).join(' ').trim() || userResponse.data?.username || email;
+    }
+  } catch {
+    displayName = email;
+  }
+
+  userSessions[email] = token;
   return {
     success: true,
-    sessionToken,
-    role: user.role,
-    name: user.name,
-    email: email
+    sessionToken: token,
+    token,
+    role: normalizeFrontendRole(decoded.role),
+    name: displayName,
+    email
   };
 }
 
-function getAllUsers() {
-  return Object.entries(users).map(([email, user]) => ({
-    email,
-    name: user.name,
-    role: user.role
-  }));
+async function getAllUsers() {
+  const token = await getAuthToken();
+  const response = await gatewayRequest('get', '/users/backOffice/list', { token });
+  return response.status >= 200 && response.status < 300 ? response.data : [];
 }
 
-function deleteUser(email) {
-  if (users[email]) {
-    delete users[email];
-    delete userSessions[email];
-    persistData();
-    return { success: true, message: 'User deleted' };
+async function findUserByEmailOrUsername(identifier, token) {
+  const response = await gatewayRequest('get', '/users/backOffice/list', { token });
+  if (response.status < 200 || response.status >= 300 || !Array.isArray(response.data)) {
+    return null;
   }
-  return { success: false, message: 'User not found' };
+
+  return response.data.find(user =>
+    user.email?.toLowerCase() === identifier.toLowerCase() ||
+    user.username?.toLowerCase() === identifier.toLowerCase()
+  ) || null;
 }
 
-function updateUser(email, updates) {
-  if (!users[email]) {
+async function deleteUser(identifier) {
+  const token = await getAuthToken();
+  const user = await findUserByEmailOrUsername(identifier, token);
+  if (!user) {
     return { success: false, message: 'User not found' };
   }
-  if (updates.name) users[email].name = updates.name;
-  if (updates.password) users[email].password = updates.password;
-  if (updates.role) users[email].role = updates.role;
-  persistData();
-  return { success: true, message: 'User updated', user: users[email] };
+
+  const response = await gatewayRequest('patch', `/users/${user.id}`, {
+    token,
+    body: { active: false }
+  });
+
+  if (response.status >= 200 && response.status < 300) {
+    return { success: true, message: 'User deactivated', user: response.data };
+  }
+
+  return { success: false, message: response.data?.message || 'Failed to deactivate user' };
+}
+
+async function updateUser(identifier, updates) {
+  const token = await getAuthToken();
+  const user = await findUserByEmailOrUsername(identifier, token);
+  if (!user) {
+    return { success: false, message: 'User not found' };
+  }
+
+  const response = await gatewayRequest('patch', `/users/${user.id}`, {
+    token,
+    body: updates
+  });
+
+  if (response.status >= 200 && response.status < 300) {
+    return { success: true, message: 'User updated', user: response.data };
+  }
+
+  return { success: false, message: response.data?.message || 'Failed to update user' };
 }
 
 // ==================== BRANDS ====================
-function getAllBrands() {
-  return brands;
+async function getAllBrands() {
+  const response = await gatewayRequest('get', '/brands');
+  return response.status >= 200 && response.status < 300 ? response.data : [];
 }
 
-function addBrand(name) {
-  console.log('🏷️  Adding brand:', name);
-  if (brands.find(b => b.name.toLowerCase() === name.toLowerCase())) {
-    console.log('  ❌ Already exists');
-    return { success: false, message: 'Brand already exists' };
+async function addBrand(name) {
+  const token = await getAuthToken();
+  const response = await gatewayRequest('post', '/brands', {
+    token,
+    body: { name }
+  });
+
+  if (response.status >= 200 && response.status < 300) {
+    return { success: true, brand: response.data };
   }
-  const newBrand = { id: metadata.nextBrandId++, name };
-  console.log('  ✅ New brand:', newBrand, '| Metadata now:', metadata.nextBrandId);
-  brands.push(newBrand);
-  console.log('  📝 About to persist. Brands array size:', brands.length);
-  try {
-    persistData();
-    console.log('  ✅ Persisted successfully');
-  } catch (err) {
-    console.error('  ❌ Persist failed:', err.message);
-    throw err;
-  }
-  return { success: true, brand: newBrand };
+
+  return { success: false, message: response.data?.message || 'Brand already exists or failed to create' };
 }
 
-function deleteBrand(id) {
-  const idx = brands.findIndex(b => b.id === id);
-  if (idx === -1) {
-    return { success: false, message: 'Brand not found' };
+async function deleteBrand(id) {
+  const token = await getAuthToken();
+  const response = await gatewayRequest('patch', `/brands/${id}/deactivate`, { token });
+
+  if (response.status >= 200 && response.status < 300) {
+    return { success: true, message: 'Brand deactivated', brand: response.data };
   }
-  brands.splice(idx, 1);
-  persistData();
-  return { success: true, message: 'Brand deleted' };
+
+  return { success: false, message: response.data?.message || 'Brand not found' };
 }
 
-function updateBrand(id, name) {
-  const brand = brands.find(b => b.id === id);
-  if (!brand) {
-    return { success: false, message: 'Brand not found' };
+async function updateBrand(id, name) {
+  const token = await getAuthToken();
+  const response = await gatewayRequest('put', `/brands/${id}`, {
+    token,
+    body: { name }
+  });
+
+  if (response.status >= 200 && response.status < 300) {
+    return { success: true, brand: response.data };
   }
-  if (brands.some(b => b.id !== id && b.name.toLowerCase() === name.toLowerCase())) {
-    return { success: false, message: 'Brand name already exists' };
-  }
-  brand.name = name;
-  persistData();
-  return { success: true, brand };
+
+  return { success: false, message: response.data?.message || 'Brand not found' };
 }
 
 // ==================== CATEGORIES ====================
-function getAllCategories() {
-  return categories;
+async function getAllCategories() {
+  const response = await gatewayRequest('get', '/categories');
+  return response.status >= 200 && response.status < 300 ? response.data : [];
 }
 
-function addCategory(name) {
-  if (categories.find(c => c.name.toLowerCase() === name.toLowerCase())) {
-    return { success: false, message: 'Category already exists' };
+async function addCategory(name) {
+  const token = await getAuthToken();
+  const response = await gatewayRequest('post', '/categories', {
+    token,
+    body: { name }
+  });
+
+  if (response.status >= 200 && response.status < 300) {
+    return { success: true, category: response.data };
   }
-  const newCategory = { id: metadata.nextCategoryId++, name };
-  categories.push(newCategory);
-  persistData();
-  return { success: true, category: newCategory };
+
+  return { success: false, message: response.data?.message || 'Category already exists or failed to create' };
 }
 
-function deleteCategory(id) {
-  const idx = categories.findIndex(c => c.id === id);
-  if (idx === -1) {
-    return { success: false, message: 'Category not found' };
+async function deleteCategory(id) {
+  const token = await getAuthToken();
+  const response = await gatewayRequest('patch', `/categories/${id}/deactivate`, { token });
+
+  if (response.status >= 200 && response.status < 300) {
+    return { success: true, message: 'Category deactivated', category: response.data };
   }
-  categories.splice(idx, 1);
-  persistData();
-  return { success: true, message: 'Category deleted' };
+
+  return { success: false, message: response.data?.message || 'Category not found' };
 }
 
-function updateCategory(id, name) {
-  const category = categories.find(c => c.id === id);
-  if (!category) {
-    return { success: false, message: 'Category not found' };
+async function updateCategory(id, name) {
+  const token = await getAuthToken();
+  const response = await gatewayRequest('put', `/categories/${id}`, {
+    token,
+    body: { name }
+  });
+
+  if (response.status >= 200 && response.status < 300) {
+    return { success: true, category: response.data };
   }
-  if (categories.some(c => c.id !== id && c.name.toLowerCase() === name.toLowerCase())) {
-    return { success: false, message: 'Category name already exists' };
-  }
-  category.name = name;
-  persistData();
-  return { success: true, category };
+
+  return { success: false, message: response.data?.message || 'Category not found' };
 }
 
 // ==================== ORDERS ====================
-function trackOrder(userId, email, productId, quantity, totalAmount) {
-  const orderId = metadata.nextOrderId++;
-  orderTracker[orderId] = {
-    orderId,
-    userId,
-    email,
-    productId,
-    quantity,
-    totalAmount,
-    status: 'PENDING_PAYMENT',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  persistData();
-  console.log('📦 Order tracked:', orderId, 'for user', email);
-  return orderId;
-}
+async function trackOrder(email, productId, quantity) {
+  const token = await getAuthToken();
+  const response = await gatewayRequest('post', '/order', {
+    token,
+    body: {
+      username: email,
+      productId: Number(productId),
+      quantity: Number(quantity)
+    }
+  });
 
-function getAllOrders() {
-  return Object.values(orderTracker);
-}
-
-function getUserOrders(email) {
-  return Object.values(orderTracker).filter(o => o.email === email);
-}
-
-function deleteOrder(orderId) {
-  if (!orderTracker[orderId]) {
-    return { success: false, message: 'Order not found' };
+  if (response.status >= 200 && response.status < 300) {
+    return { success: true, order: response.data };
   }
-  delete orderTracker[orderId];
-  persistData();
-  return { success: true, message: 'Order deleted' };
+
+  return { success: false, message: response.data?.message || 'Failed to create order' };
+}
+
+async function getAllOrders() {
+  const token = await getAuthToken();
+  const response = await gatewayRequest('get', '/order/backOffice/list', { token });
+  return response.status >= 200 && response.status < 300 ? response.data : [];
+}
+
+async function getUserOrders(email) {
+  const token = await getAuthToken();
+  const response = await gatewayRequest('get', '/order/list', {
+    token,
+    headers: {
+      'X-User-Name': email
+    }
+  });
+  return response.status >= 200 && response.status < 300 ? response.data : [];
+}
+
+async function deleteOrder(orderId) {
+  const token = await getAuthToken();
+  const response = await gatewayRequest('patch', `/order/${orderId}/status?status=CANCELED`, { token });
+
+  if (response.status >= 200 && response.status < 300) {
+    return { success: true, message: 'Order cancelled', order: response.data };
+  }
+
+  return { success: false, message: response.data?.message || 'Order not found' };
 }
 
 // Status transition rules (cannot go backwards)
@@ -351,71 +359,71 @@ const STATUS_TRANSITIONS = {
   'REFUNDED': []
 };
 
-function updateOrderStatus(orderId, newStatus) {
-  if (!orderTracker[orderId]) {
-    return { success: false, message: 'Order not found' };
+async function updateOrderStatus(orderId, newStatus) {
+  const token = await getAuthToken();
+  const response = await gatewayRequest('patch', `/order/${orderId}/status?status=${encodeURIComponent(newStatus)}`, { token });
+
+  if (response.status >= 200 && response.status < 300) {
+    return { success: true, message: 'Order status updated', order: response.data };
   }
 
-  const order = orderTracker[orderId];
-  const currentStatus = order.status;
-  
-  // Check if transition is valid
-  if (!STATUS_TRANSITIONS[currentStatus] || !STATUS_TRANSITIONS[currentStatus].includes(newStatus)) {
-    return { 
-      success: false, 
-      message: `Cannot change status from ${currentStatus} to ${newStatus}. Valid transitions: ${STATUS_TRANSITIONS[currentStatus].join(', ') || 'None (final state)'}` 
-    };
-  }
-
-  order.status = newStatus;
-  order.updatedAt = new Date().toISOString();
-  persistData();
-  
-  return { success: true, message: 'Order status updated', order };
+  return { success: false, message: response.data?.message || 'Order not found' };
 }
 
 // ==================== API ROUTES ====================
 
 // AUTHENTICATION
-app.post('/api/auth/signup', (req, res) => {
+app.post('/api/auth/signup', async (req, res) => {
   const { email, password, name, role } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password required' });
   }
-  const result = signupUser(email, password, name, role || 'user');
-  if (result.success) {
-    res.json(result);
-  } else {
-    res.status(400).json(result);
+  try {
+    const result = await signupUser(email, password, name, role || 'user');
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to sign up', details: error.message });
   }
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password required' });
   }
-  const result = loginUser(email, password);
-  if (result.success) {
-    res.json(result);
-  } else {
-    res.status(401).json(result);
+  try {
+    const result = await loginUser(email, password);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(401).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to login', details: error.message });
   }
 });
 
 // BRANDS - Get all brands
-app.get('/api/admin/brands', (req, res) => {
-  res.json(getAllBrands());
+app.get('/api/admin/brands', async (req, res) => {
+  try {
+    res.json(await getAllBrands());
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get brands', details: error.message });
+  }
 });
 
 // BRANDS - Add new brand
-app.post('/api/admin/brands', (req, res) => {
+app.post('/api/admin/brands', async (req, res) => {
   try {
     const { name } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Brand name required' });
     }
-    const result = addBrand(name);
+    const result = await addBrand(name);
     if (result.success) {
       res.status(201).json(result);
     } else {
@@ -428,9 +436,9 @@ app.post('/api/admin/brands', (req, res) => {
 });
 
 // BRANDS - Delete brand
-app.delete('/api/admin/brands/:id', (req, res) => {
+app.delete('/api/admin/brands/:id', async (req, res) => {
   try {
-    const result = deleteBrand(parseInt(req.params.id));
+    const result = await deleteBrand(parseInt(req.params.id));
     if (result.success) {
       res.json(result);
     } else {
@@ -443,15 +451,15 @@ app.delete('/api/admin/brands/:id', (req, res) => {
 });
 
 // BRANDS - Update brand
-app.put('/api/admin/brands/:id', (req, res) => {
+app.put('/api/admin/brands/:id', async (req, res) => {
   try {
     const { name } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Brand name required' });
     }
-    const result = updateBrand(parseInt(req.params.id), name);
+    const result = await updateBrand(parseInt(req.params.id), name);
     if (result.success) {
-      res.status(201).json(result);
+      res.status(200).json(result);
     } else {
       res.status(400).json(result);
     }
@@ -462,18 +470,22 @@ app.put('/api/admin/brands/:id', (req, res) => {
 });
 
 // CATEGORIES - Get all categories
-app.get('/api/admin/categories', (req, res) => {
-  res.json(getAllCategories());
+app.get('/api/admin/categories', async (req, res) => {
+  try {
+    res.json(await getAllCategories());
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get categories', details: error.message });
+  }
 });
 
 // CATEGORIES - Add new category
-app.post('/api/admin/categories', (req, res) => {
+app.post('/api/admin/categories', async (req, res) => {
   try {
     const { name } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Category name required' });
     }
-    const result = addCategory(name);
+    const result = await addCategory(name);
     if (result.success) {
       res.status(201).json(result);
     } else {
@@ -486,9 +498,9 @@ app.post('/api/admin/categories', (req, res) => {
 });
 
 // CATEGORIES - Delete category
-app.delete('/api/admin/categories/:id', (req, res) => {
+app.delete('/api/admin/categories/:id', async (req, res) => {
   try {
-    const result = deleteCategory(parseInt(req.params.id));
+    const result = await deleteCategory(parseInt(req.params.id));
     if (result.success) {
       res.json(result);
     } else {
@@ -501,15 +513,15 @@ app.delete('/api/admin/categories/:id', (req, res) => {
 });
 
 // CATEGORIES - Update category
-app.put('/api/admin/categories/:id', (req, res) => {
+app.put('/api/admin/categories/:id', async (req, res) => {
   try {
     const { name } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Category name required' });
     }
-    const result = updateCategory(parseInt(req.params.id), name);
+    const result = await updateCategory(parseInt(req.params.id), name);
     if (result.success) {
-      res.status(201).json(result);
+      res.status(200).json(result);
     } else {
       res.status(400).json(result);
     }
@@ -520,18 +532,18 @@ app.put('/api/admin/categories/:id', (req, res) => {
 });
 
 // USERS - Get all users
-app.get('/api/admin/users', (req, res) => {
+app.get('/api/admin/users', async (req, res) => {
   try {
-    res.json(getAllUsers());
+    res.json(await getAllUsers());
   } catch (e) {
     res.status(500).json({ error: 'Failed to get users' });
   }
 });
 
 // USERS - Update user
-app.put('/api/admin/users/:email', (req, res) => {
+app.put('/api/admin/users/:email', async (req, res) => {
   try {
-    const result = updateUser(decodeURIComponent(req.params.email), req.body);
+    const result = await updateUser(decodeURIComponent(req.params.email), req.body);
     if (result.success) {
       res.json(result);
     } else {
@@ -543,9 +555,9 @@ app.put('/api/admin/users/:email', (req, res) => {
 });
 
 // USERS - Delete user
-app.delete('/api/admin/users/:email', (req, res) => {
+app.delete('/api/admin/users/:email', async (req, res) => {
   try {
-    const result = deleteUser(decodeURIComponent(req.params.email));
+    const result = await deleteUser(decodeURIComponent(req.params.email));
     if (result.success) {
       res.json(result);
     } else {
@@ -720,16 +732,16 @@ app.delete('/api/admin/products/:id', async (req, res) => {
 });
 
 // ORDERS - Get all orders
-app.get('/api/admin/orders', (req, res) => {
+app.get('/api/admin/orders', async (req, res) => {
   try {
-    res.json(getAllOrders());
+    res.json(await getAllOrders());
   } catch (e) {
     res.status(500).json({ error: 'Failed to get orders' });
   }
 });
 
 // ORDERS - Change order status
-app.post('/api/admin/orders/:orderId/status', (req, res) => {
+app.post('/api/admin/orders/:orderId/status', async (req, res) => {
   try {
     const orderId = parseInt(req.params.orderId);
     const { status } = req.body;
@@ -738,7 +750,7 @@ app.post('/api/admin/orders/:orderId/status', (req, res) => {
       return res.status(400).json({ success: false, message: 'Status required' });
     }
 
-    const result = updateOrderStatus(orderId, status);
+    const result = await updateOrderStatus(orderId, status);
     if (result.success) {
       res.json(result);
     } else {
@@ -750,10 +762,10 @@ app.post('/api/admin/orders/:orderId/status', (req, res) => {
 });
 
 // ORDERS - Delete order
-app.delete('/api/admin/orders/:orderId', (req, res) => {
+app.delete('/api/admin/orders/:orderId', async (req, res) => {
   try {
     const orderId = parseInt(req.params.orderId);
-    const result = deleteOrder(orderId);
+    const result = await deleteOrder(orderId);
     if (result.success) {
       res.json(result);
     } else {
@@ -789,9 +801,9 @@ app.get('/api/user/products', async (req, res) => {
 });
 
 // USER - Get orders
-app.get('/api/user/my-orders/:email', (req, res) => {
+app.get('/api/user/my-orders/:email', async (req, res) => {
   try {
-    const orders = getUserOrders(req.params.email);
+    const orders = await getUserOrders(req.params.email);
     res.json(orders);
   } catch (e) {
     console.error('Error getting user orders:', e);
@@ -808,98 +820,18 @@ app.post('/api/user/orders', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Step 1: Get auth token for gateway calls
-    const token = await getAuthToken();
-    if (!token) {
-      return res.status(401).json({ error: 'Failed to authenticate' });
-    }
-
-    // Step 2: Get product details to calculate total amount
-    let product = null;
-    try {
-      const productRes = await axios.get(`${GATEWAY_URL}/products/${productId}`, {
-        validateStatus: () => true,
-        timeout: 5000
+    const result = await trackOrder(email, productId, quantity);
+    if (result.success) {
+      res.status(201).json({
+        success: true,
+        trackingId: result.order?.id,
+        message: 'Order created successfully',
+        details: result.order
       });
-      if (productRes.status === 200) {
-        product = productRes.data;
-      }
-    } catch (e) {
-      console.error('Failed to fetch product:', e.message);
+      return;
     }
 
-    const totalAmount = product ? product.price * quantity : 0;
-
-    // Step 3: Decrease inventory in inventory-service AND update product quantity
-    try {
-      const inventoryRes = await axios.post(
-        `${GATEWAY_URL}/inventory/decrease?productId=${productId}&quantity=${quantity}`,
-        {},
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          validateStatus: () => true,
-          timeout: 5000
-        }
-      );
-      
-      if (inventoryRes.status >= 200 && inventoryRes.status < 300) {
-        console.log(`✅ Stock decreased in inventory-service for product ${productId} by ${quantity}`);
-        
-        // Also update the product quantity in catalog-service
-        if (product) {
-          try {
-            const newQuantity = Math.max(0, (product.quantity || 100) - quantity);
-            console.log(`🔄 Updating product quantity: ${product.quantity} → ${newQuantity}`);
-            
-            const updateRes = await axios.put(
-              `${GATEWAY_URL}/products/${productId}`,
-              { ...product, quantity: newQuantity },
-              {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                },
-                validateStatus: () => true,
-                timeout: 5000
-              }
-            );
-            
-            console.log(`PUT response status: ${updateRes.status}`);
-            if (updateRes.status >= 200 && updateRes.status < 300) {
-              console.log(`✅ Product quantity updated: ${product.quantity} → ${newQuantity}`);
-            } else {
-              console.error(`❌ PUT failed with status ${updateRes.status}:`, updateRes.data);
-            }
-          } catch (e) {
-            console.error(`❌ Exception updating product quantity: ${e.message}`);
-          }
-        } else {
-          console.warn('❌ Product object is null, cannot update quantity');
-        }
-      } else {
-        console.error(`⚠️ Failed to decrease inventory: ${inventoryRes.status}`, inventoryRes.data);
-      }
-    } catch (e) {
-      console.error('❌ Error decreasing inventory:', e.message);
-    }
-
-    // Step 4: Track order locally
-    const orderId = trackOrder('user', email, productId, quantity, totalAmount);
-    
-    res.status(201).json({
-      success: true,
-      trackingId: orderId,
-      message: 'Order created successfully',
-      details: {
-        productId: productId,
-        quantity: quantity,
-        totalAmount: totalAmount,
-        status: 'PENDING_PAYMENT'
-      }
-    });
+    res.status(502).json({ error: 'Failed to create order', details: result.message });
   } catch (e) {
     console.error('Error creating order:', e);
     res.status(500).json({ error: 'Failed to create order', details: e.message });
@@ -982,8 +914,7 @@ app.get('/api/health', (req, res) => {
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`\n✅ XCommerce Server running on http://localhost:${PORT}`);
-  console.log(`📁 Data persisted in: ${DATA_DIR}`);
-  console.log(`🎮 Categories: gaming keyboard, gaming mouse, gaming headset`);
-  console.log(`🏷️  Brands: HyperX, Logitech`);
-  console.log(`🔐 Demo: admin@xcommerce.com / 123456\n`);
+  console.log('🔗 Dashboard connected to live microservices through the API Gateway');
+  console.log('🎮 UI: live brands, categories, products, users and orders');
+  console.log('🔐 Login: auth-service via gateway\n');
 });
