@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/users")
-@SuppressWarnings("unchecked")
 public class UserController {
 
     @Autowired
@@ -81,7 +81,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getById(
-        @PathVariable Long id,
+        @PathVariable @NonNull Long id,
         @RequestHeader("X-User-Name") String requesterUsername,
         @RequestHeader("X-User-Role") String requesterRole
     ) {
@@ -110,7 +110,7 @@ public class UserController {
     @PatchMapping("/{id}")
     @Transactional
     public ResponseEntity<UserResponse> updateUser(
-        @PathVariable Long id,
+        @PathVariable @NonNull Long id,
         @RequestBody UserRequest data,
         @RequestHeader("X-User-Name") String requesterUsername,
         @RequestHeader("X-User-Role") String requesterRole

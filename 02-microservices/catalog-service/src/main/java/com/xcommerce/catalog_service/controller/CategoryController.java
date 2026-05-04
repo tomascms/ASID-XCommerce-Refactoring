@@ -6,6 +6,7 @@ import com.xcommerce.catalog_service.repository.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,7 +39,7 @@ public class CategoryController {
 
     @PutMapping("/{id}")
     @Transactional
-    public ResponseEntity<com.xcommerce.catalog_service.dto.CategoryResponse> update(@PathVariable Long id, @RequestBody CategoryRequest data) {
+    public ResponseEntity<com.xcommerce.catalog_service.dto.CategoryResponse> update(@PathVariable @NonNull Long id, @RequestBody CategoryRequest data) {
         return repository.findById(id).map(category -> {
             category.setName(data.getName());
             category.setParentCategory(resolveParent(data.getParentCategoryId()));
@@ -52,7 +53,7 @@ public class CategoryController {
 
     @PatchMapping("/{id}/deactivate")
     @Transactional
-    public ResponseEntity<com.xcommerce.catalog_service.dto.CategoryResponse> deactivate(@PathVariable Long id) {
+    public ResponseEntity<com.xcommerce.catalog_service.dto.CategoryResponse> deactivate(@PathVariable @NonNull Long id) {
         return repository.findById(id).map(category -> {
             category.setActive(false);
             Category updated = repository.save(category);
