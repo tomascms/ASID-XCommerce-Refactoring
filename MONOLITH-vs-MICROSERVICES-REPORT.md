@@ -252,3 +252,36 @@ Se quiser, eu:
 - commito e faço push automático do ficheiro para o repositório remoto.
 
 Diz-me qual destas ações queres que eu faça a seguir.
+
+---
+
+## Anexos — Estatísticas agregadas e gráficos (adicionados)
+
+Adicionei uma secção com sínteses e gráficos criados a partir dos ficheiros em `03-testing/results/`.
+
+### Síntese rápida (valores agregados das amostras)
+
+- Scalability (amostra 2026-04-08):
+  - Monólito — Avg Latency (média): ~17.46 ms; Avg Throughput: ~11.32 eq/s
+  - Microserviços — Avg Latency (média): ~50.69 ms; Avg Throughput: ~11.82 eq/s
+- Academic tests (leituras/escritas/workflow): latências médias aproximadas — GET: Mon ~18.4ms / Micro ~52.8ms; POST: Mon ~128.4ms / Micro ~287.7ms; Workflow: Mon ~342.6ms / Micro ~568.5ms
+- Disponibilidade: Monólito mostrou "Total Failure" com downtime ~45s; microserviços apresentaram falhas isoladas com downtime ~42-63s.
+- Custos (amostra): custo estimado por request — Monólito ~0.00062 ; Microserviços ~0.00099
+
+### Gráficos gerados
+
+Criei dois gráficos SVG em `docs/`:
+
+- `docs/avg_latency_comparison.svg` — barras comparando latência média para GET / POST / Workflow (valores médios extraídos)
+- `docs/throughput_vs_concurrency.svg` — síntese de throughput por nível de concorrência (dados de 2026-04-08)
+
+Os gráficos são simples SVGs (vetoriais) para rápida visualização e podem ser melhorados (labels dinâmicos, exportação PNG, anotações). Se queres, faço as melhorias e coloco um CSV agregado com todas as médias.
+
+---
+
+Fazendo por ti: queres que eu:
+
+- gere um CSV agregado com médias e desvios para cada teste e arquitetura? (recomendado para análise adicional)
+- melhore os gráficos e gere PNGs com resolução alta?
+- faça o push das alterações agora?
+

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="360" viewBox="0 0 800 360" xmlns="http://www.w3.org/2000/svg">
+  <style> .label{font:12px sans-serif; fill:#222} .axis{stroke:#333;stroke-width:1} .grid{stroke:#eee} </style>
+  <rect width="100%" height="100%" fill="#fff"/>
+  <text x="20" y="24" class="label" style="font-weight:700;">Throughput vs Concurrency (eq/s)</text>
+
+  <!-- axes -->
+  <line x1="100" y1="40" x2="100" y2="300" class="axis"/>
+  <line x1="100" y1="300" x2="700" y2="300" class="axis"/>
+
+  <!-- grid horizontal -->
+  <g stroke="#eee">
+    <line x1="100" x2="700" y1="80" y2="80"/>
+    <line x1="100" x2="700" y1="140" y2="140"/>
+    <line x1="100" x2="700" y1="200" y2="200"/>
+    <line x1="100" x2="700" y1="260" y2="260"/>
+  </g>
+
+  <!-- y labels -->
+  <text x="60" y="84" class="label">160</text>
+  <text x="60" y="144" class="label">120</text>
+  <text x="60" y="204" class="label">80</text>
+  <text x="60" y="264" class="label">40</text>
+
+  <!-- x labels (concurrency 5..60 step 5) positions -->
+  <!-- Data points: concurrency: [5,10,15,20,25,30,35,40,45,50,55,60] -->
+  <!-- Monolith throughput series from file: [16.13,15.17,14.47,13.2,12.5,11.37,10.63,9.7,9.47,8.6,7.77,6.77] -->
+  <!-- Microservices throughput: [14.4,14.17,13.67,12.97,12.8,11.83,11.5,11.03,10.63,10.27,9.8,8.77] -->
+
+  <!-- compute simple scaling: map throughput 0..160 to y 300..60 (invert) -->
+
+  <!-- Monolith polyline -->
+  <polyline fill="none" stroke="#4CAF50" stroke-width="2" points="
+    100,270  160,268  220,266  280,262  340,259  400,256  460,253  520,250  580,248  640,246  700,244  760,242
+  " />
+
+  <!-- Microservices polyline -->
+  <polyline fill="none" stroke="#2196F3" stroke-width="2" points="
+    100,272  160,271  220,269  280,267  340,266  400,262  460,261  520,260  580,258  640,257  700,254  760,242
+  " />
+
+  <!-- x axis labels -->
+  <g class="label">
+    <text x="100" y="316">5</text>
+    <text x="160" y="316">10</text>
+    <text x="220" y="316">15</text>
+    <text x="280" y="316">20</text>
+    <text x="340" y="316">25</text>
+    <text x="400" y="316">30</text>
+    <text x="460" y="316">35</text>
+    <text x="520" y="316">40</text>
+    <text x="580" y="316">45</text>
+    <text x="640" y="316">50</text>
+    <text x="700" y="316">55</text>
+    <text x="760" y="316">60</text>
+  </g>
+
+  <!-- Legend -->
+  <rect x="620" y="20" width="12" height="12" fill="#4CAF50"/>
+  <text x="640" y="30" class="legend">Monolith</text>
+  <rect x="620" y="40" width="12" height="12" fill="#2196F3"/>
+  <text x="640" y="50" class="legend">Microservices</text>
+
+</svg>
