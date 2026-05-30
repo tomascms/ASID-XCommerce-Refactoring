@@ -1,0 +1,74 @@
+═══════════════════════════════════════════════════════════════
+  H1 — Análise estática de dependências cross-domain
+═══════════════════════════════════════════════════════════════
+
+Data: Sat May 30 21:40:25 WEST 2026
+
+┌─ MONÓLITO ──────────────────────────────────────────────────
+│
+│ 1. Foreign keys cross-domain (JPA)
+│      OrderLine → Product (O→C)
+│      Order → User (O→U)
+│    Total: 2
+│
+│ 2. Entidades JPA partilhadas em DTOs
+│      ShoppingCart guarda Hashtable<Product, Integer> (K→C)
+│    Total: 1
+│
+│ 3. Serviços com acesso direto a repositórios cross-domain
+│      ShoppingCartService → ProductRepository (K→C)
+│      OrderService → ProductRepository (O→C)
+│      OrderService → UserRepository (O→U)
+│    Total: 3
+│
+│ TOTAL DEPENDÊNCIAS MONÓLITO: 6
+└──────────────────────────────────────────────────────────────
+
+┌─ MICROSERVIÇOS ─────────────────────────────────────────────
+│
+│ 1. Chamadas REST síncronas inter-serviço (Feign Clients)
+│      order-service → cart-service     (ler carrinho)
+│      order-service → cart-service     (limpar carrinho)
+│      order-service → catalog-service  (obter preço)
+│      order-service → inventory-service (verificar stock)
+│      order-service → inventory-service (decrementar stock)
+│    Total: 5
+│
+│ 2. Tópicos Kafka cross-service
+│      order-created-events     (order → inventory, payment)
+│      payment-events           (payment → order, notification)
+│      order-confirmed-events   (order → notification)
+│      order-cancelled-events   (order → notification, inventory)
+│    Total: 4
+│
+│ 3. Serviços que dependem de identidade propagada (X-User-Name/Role)
+│      cart-service (8 ocorrências)
+│      order-service (11 ocorrências)
+│      identity-service (10 ocorrências)
+│    Total: 3
+│
+│ TOTAL DEPENDÊNCIAS MICROSERVIÇOS: 12
+└──────────────────────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════════════
+  TABELA COMPARATIVA
+═══════════════════════════════════════════════════════════════
+
+  Tipo de dependência                                Monólito  Microserviços
+  ────────────────────────────────────────────────────────────────────────────
+  Foreign keys cross-domain (JPA)                             2               0
+  Entidades JPA partilhadas em DTOs                           1               0
+  Acesso direto a repositórios cross-domain                  3               0
+  Chamadas REST síncronas inter-serviço                     0               5
+  Tópicos Kafka cross-service                                0               4
+  Serviços com identidade propagada                          0               3
+  ────────────────────────────────────────────────────────────────────────────
+  TOTAL                                                       6              12
+
+  Variação: 6 dependências adicionais (+100%)
+
+  ✅ H1 CONFIRMA-SE
+     A decomposição não eliminou o acoplamento — redistribuiu-o.
+     Dependências estáticas (FKs, entidades partilhadas) substituídas
+     por dependências dinâmicas (REST, Kafka, identidade) em número igual
+     ou superior.

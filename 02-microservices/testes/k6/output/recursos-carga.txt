@@ -1,0 +1,22 @@
+NAME                             CPU %     MEM USAGE / LIMIT     MEM %
+xcommerce-gateway                23.91%    554MiB / 23.92GiB     2.26%
+xcommerce-kafdrop                0.05%     157.7MiB / 23.92GiB   0.64%
+xcommerce-notification-service   4.21%     340.6MiB / 23.92GiB   1.39%
+xcommerce-order-service          30.24%    384.1MiB / 23.92GiB   1.57%
+xcommerce-identity-service       0.06%     333.6MiB / 23.92GiB   1.36%
+xcommerce-payment-service        0.16%     366.2MiB / 23.92GiB   1.49%
+xcommerce-catalog-service        12.82%    660.3MiB / 23.92GiB   2.70%
+xcommerce-inventory-service      19.10%    422.9MiB / 23.92GiB   1.73%
+xcommerce-cart-service           26.24%    356MiB / 23.92GiB     1.45%
+xcommerce-kafka                  19.45%    839.4MiB / 23.92GiB   3.43%
+xcommerce-grafana                3.30%     394MiB / 23.92GiB     1.61%
+xcommerce-db-payment             0.00%     21.35MiB / 23.92GiB   0.09%
+xcommerce-db-identity            0.00%     22.08MiB / 23.92GiB   0.09%
+xcommerce-db-notification        0.00%     27.54MiB / 23.92GiB   0.11%
+xcommerce-db-catalog             2.33%     33.14MiB / 23.92GiB   0.14%
+xcommerce-db-orders              27.84%    56.24MiB / 23.92GiB   0.23%
+xcommerce-db-inventory           5.14%     36.84MiB / 23.92GiB   0.15%
+xcommerce-db-cart                6.56%     31.41MiB / 23.92GiB   0.13%
+xcommerce-jaeger                 3.42%     1.126GiB / 23.92GiB   4.71%
+xcommerce-prometheus             0.05%     74.79MiB / 23.92GiB   0.31%
+xcommerce-zookeeper              0.07%     71.28MiB / 23.92GiB   0.29%

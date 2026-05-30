@@ -1,0 +1,5 @@
+  id   | username |  status  | total_amount 
+-------+----------+----------+--------------
+ 42855 | admin    | HANDLING |      1799.98
+(1 row)
+

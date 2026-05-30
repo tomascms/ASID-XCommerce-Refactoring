@@ -1,0 +1,5 @@
+
+Consumer group 'inventory-group' has no active members.
+
+GROUP           TOPIC                PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID     HOST            CLIENT-ID
+inventory-group order-created-events 0          42854           42855           1               -               -               -

@@ -1,0 +1,4 @@
+NAME             CPU %     MEM USAGE / LIMIT     MEM %
+monolith-app     0.75%     886.1MiB / 23.92GiB   3.62%
+monolith-db      0.03%     49.76MiB / 23.92GiB   0.20%
+monolith-redis   0.74%     7.648MiB / 23.92GiB   0.03%
