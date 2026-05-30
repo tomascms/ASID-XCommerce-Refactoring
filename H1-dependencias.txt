@@ -2,7 +2,7 @@
   H1 — Análise estática de dependências cross-domain
 ═══════════════════════════════════════════════════════════════
 
-Data: Sat May 30 21:40:25 WEST 2026
+Data: Sat May 30 23:02:28 WEST 2026
 
 ┌─ MONÓLITO ──────────────────────────────────────────────────
 │
@@ -35,11 +35,12 @@ Data: Sat May 30 21:40:25 WEST 2026
 │    Total: 5
 │
 │ 2. Tópicos Kafka cross-service
-│      order-created-events     (order → inventory, payment)
-│      payment-events           (payment → order, notification)
+│      order-created-events     (order → inventory)
+│      stock-reservation-events (inventory → order)
 │      order-confirmed-events   (order → notification)
-│      order-cancelled-events   (order → notification, inventory)
-│    Total: 4
+│      order-cancelled-events   (order → notification)
+│      product-events           (catalog → notification)
+│    Total: 5
 │
 │ 3. Serviços que dependem de identidade propagada (X-User-Name/Role)
 │      cart-service (8 ocorrências)
@@ -47,7 +48,7 @@ Data: Sat May 30 21:40:25 WEST 2026
 │      identity-service (10 ocorrências)
 │    Total: 3
 │
-│ TOTAL DEPENDÊNCIAS MICROSERVIÇOS: 12
+│ TOTAL DEPENDÊNCIAS MICROSERVIÇOS: 13
 └──────────────────────────────────────────────────────────────
 
 ═══════════════════════════════════════════════════════════════
@@ -60,12 +61,12 @@ Data: Sat May 30 21:40:25 WEST 2026
   Entidades JPA partilhadas em DTOs                           1               0
   Acesso direto a repositórios cross-domain                  3               0
   Chamadas REST síncronas inter-serviço                     0               5
-  Tópicos Kafka cross-service                                0               4
+  Tópicos Kafka cross-service                                0               5
   Serviços com identidade propagada                          0               3
   ────────────────────────────────────────────────────────────────────────────
-  TOTAL                                                       6              12
+  TOTAL                                                       6              13
 
-  Variação: 6 dependências adicionais (+100%)
+  Variação: 7 dependências adicionais (+116%)
 
   ✅ H1 CONFIRMA-SE
      A decomposição não eliminou o acoplamento — redistribuiu-o.

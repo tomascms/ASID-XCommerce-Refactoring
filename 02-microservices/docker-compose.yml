@@ -70,20 +70,6 @@ services:
       retries: 5
     networks: [xcommerce-network]
 
-  db-payment:
-    image: postgres:15-alpine
-    container_name: xcommerce-db-payment
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=xcommerce_payment
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_payment"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks: [xcommerce-network]
-
   db-notification:
     image: postgres:15-alpine
     container_name: xcommerce-db-notification
@@ -239,21 +225,6 @@ services:
       kafka: { condition: service_healthy }
     networks: [xcommerce-network]
 
-  payment-service:
-    build: ./payment-service
-    container_name: xcommerce-payment-service
-    environment:
-      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
-      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8087/actuator/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-    depends_on:
-      kafka: { condition: service_healthy }
-    networks: [xcommerce-network]
-
   notification-service:
     build: ./notification-service
     container_name: xcommerce-notification-service
@@ -286,7 +257,6 @@ services:
       cart-service: { condition: service_healthy }
       order-service: { condition: service_healthy }
       inventory-service: { condition: service_healthy }
-      payment-service: { condition: service_healthy }
       notification-service: { condition: service_healthy }
     networks: [xcommerce-network]
 

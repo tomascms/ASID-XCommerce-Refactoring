@@ -20,7 +20,6 @@ public class FallbackController {
             "/fallback/order",
             "/fallback/inventory",
             "/fallback/users",
-            "/fallback/payments",
             "/fallback/notifications"
         },
         produces = MediaType.APPLICATION_JSON_VALUE

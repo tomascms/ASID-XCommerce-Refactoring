@@ -13,5 +13,4 @@ scrape_configs:
           - 'cart-service:8083'
           - 'order-service:8084'
           - 'inventory-service:8085'
-          - 'payment-service:8087'
           - 'notification-service:8088'

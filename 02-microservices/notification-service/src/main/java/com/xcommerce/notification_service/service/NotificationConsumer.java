@@ -21,31 +21,13 @@ public class NotificationConsumer {
         retryService.executeWithBackoff("product notification", () -> deliver("📢 [NOTIFICATION] Newsletter - Novo produto adicionado: {}", message));
     }
 
-    // 2. Notificar Encomenda
-    @KafkaListener(topics = "order-placed-events", groupId = "notification-group")
-    public void consumeOrderEvents(String message) {
-        retryService.executeWithBackoff("order notification", () -> deliver("📦 [NOTIFICATION] Order Confirmation - Pedido criado: {}", message));
-    }
-
-    // 3. Notificar Pagamento Bem-Sucedido
-    @KafkaListener(topics = "payment-events", groupId = "notification-group")
-    public void consumePaymentEvents(String message) {
-        retryService.executeWithBackoff("payment notification", () -> {
-            if (message.contains("PAYMENT_SUCCESSFUL")) {
-                deliver("✅ [NOTIFICATION] Payment Success - Pagamento confirmado: {}", message);
-            } else if (message.contains("PAYMENT_FAILED")) {
-                deliver("❌ [NOTIFICATION] Payment Failed - Pagamento recusado: {}. Enviando alerta ao cliente...", message);
-            }
-        });
-    }
-
-    // 4. Notificar Confirmação de Pedido
+    // 2. Notificar Confirmação de Pedido
     @KafkaListener(topics = "order-confirmed-events", groupId = "notification-group")
     public void consumeOrderConfirmedEvents(String message) {
-        retryService.executeWithBackoff("order-confirmed notification", () -> deliver("✅ [NOTIFICATION] Order Confirmed - Pedido confirmado após pagamento: {}", message));
+        retryService.executeWithBackoff("order-confirmed notification", () -> deliver("✅ [NOTIFICATION] Order Confirmed - Pedido confirmado: {}", message));
     }
 
-    // 5. Notificar Cancelamento de Pedido
+    // 3. Notificar Cancelamento de Pedido
     @KafkaListener(topics = "order-cancelled-events", groupId = "notification-group")
     public void consumeOrderCancelledEvents(String message) {
         retryService.executeWithBackoff("order-cancelled notification", () -> deliver("❌ [NOTIFICATION] Order Cancelled - Pedido cancelado: {}", message));

@@ -132,12 +132,11 @@ Recomendam-se as seguintes capturas para a Secção 6 do relatório:
 │
 ├── 02-microservices/              # Decomposição em microserviços
 │   ├── docker-compose.yml
-│   ├── identity-service/          # 7 serviços + gateway
+│   ├── identity-service/          # 6 serviços + gateway
 │   ├── catalog-service/
 │   ├── cart-service/
 │   ├── order-service/
 │   ├── inventory-service/
-│   ├── payment-service/
 │   ├── notification-service/
 │   ├── api-gateway/
 │   └── testes/

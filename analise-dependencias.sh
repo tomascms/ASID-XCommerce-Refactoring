@@ -72,16 +72,17 @@ echo "│    Total: 5"
 
 echo "│"
 echo "│ 2. Tópicos Kafka cross-service"
-echo "│      order-created-events     (order → inventory, payment)"
-echo "│      payment-events           (payment → order, notification)"
+echo "│      order-created-events     (order → inventory)"
+echo "│      stock-reservation-events (inventory → order)"
 echo "│      order-confirmed-events   (order → notification)"
-echo "│      order-cancelled-events   (order → notification, inventory)"
-echo "│    Total: 4"
+echo "│      order-cancelled-events   (order → notification)"
+echo "│      product-events           (catalog → notification)"
+echo "│    Total: 5"
 
 echo "│"
 echo "│ 3. Serviços que dependem de identidade propagada (X-User-Name/Role)"
 identity_consumers=0
-for service in cart-service order-service catalog-service inventory-service identity-service notification-service payment-service; do
+for service in cart-service order-service catalog-service inventory-service identity-service notification-service; do
   count=$(grep -r "X-User-Name\|X-User-Role" "$MICRO_SRC/$service/src/main/java" --include="*.java" 2>/dev/null | wc -l | tr -d ' ' || true)
   count=${count:-0}
   if [ "$count" != "0" ]; then
@@ -92,7 +93,7 @@ done
 echo "│    Total: $identity_consumers"
 
 echo "│"
-echo "│ TOTAL DEPENDÊNCIAS MICROSERVIÇOS: $((5 + 4 + identity_consumers))"
+echo "│ TOTAL DEPENDÊNCIAS MICROSERVIÇOS: $((5 + 5 + identity_consumers))"
 echo "└──────────────────────────────────────────────────────────────"
 echo
 
@@ -107,10 +108,10 @@ printf "  %-50s %10d %15d\n" "Foreign keys cross-domain (JPA)" 2 0
 printf "  %-50s %10d %15d\n" "Entidades JPA partilhadas em DTOs" 1 0
 printf "  %-50s %10d %15d\n" "Acesso direto a repositórios cross-domain" 3 0
 printf "  %-50s %10d %15d\n" "Chamadas REST síncronas inter-serviço" 0 5
-printf "  %-50s %10d %15d\n" "Tópicos Kafka cross-service" 0 4
+printf "  %-50s %10d %15d\n" "Tópicos Kafka cross-service" 0 5
 printf "  %-50s %10d %15d\n" "Serviços com identidade propagada" 0 "$identity_consumers"
 echo "  ────────────────────────────────────────────────────────────────────────────"
-total_micro=$((5 + 4 + identity_consumers))
+total_micro=$((5 + 5 + identity_consumers))
 printf "  %-50s %10d %15d\n" "TOTAL" 6 "$total_micro"
 echo
 echo "  Variação: $((total_micro - 6)) dependências adicionais (+$(( (total_micro - 6) * 100 / 6 ))%)"
