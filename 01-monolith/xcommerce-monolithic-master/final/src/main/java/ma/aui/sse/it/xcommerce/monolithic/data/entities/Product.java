@@ -5,6 +5,7 @@ import javax.persistence.FetchType;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.validation.constraints.NotNull;
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -12,7 +13,7 @@ import java.util.List;
  * @author Omar IRAQI
  */
 @Entity
-public class Product extends BaseEntity {
+public class Product extends BaseEntity implements Serializable {
 
     private static final long serialVersionUID = 730736845770996539L;
 
@@ -124,12 +125,15 @@ public class Product extends BaseEntity {
         if (other == null || !(other instanceof Product))
             return false;
 
+        if (getId() == null)
+            return false;
+
         return getId().longValue() == ((Product) other).getId().longValue();
     }
 
     @Override
     public int hashCode() {
-        return (int) getId().longValue();
+        return getId()==null?-1:getId().intValue();
     }
 
     /**

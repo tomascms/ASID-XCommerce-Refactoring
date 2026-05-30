@@ -1,0 +1,460 @@
+openapi: 3.1.0
+info:
+  title: MEGSI
+  description: ''
+  version: 1.0.0
+tags: []
+paths:
+  /rest/user/authenticate:
+    post:
+      summary: Authenticate
+      deprecated: false
+      description: ''
+      tags: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+                - username
+                - password
+            example:
+              username: root
+              password: root
+      responses:
+        '200':
+          description: ''
+          content:
+            application/octet-stream:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /rest/user/admin:
+    post:
+      summary: Admin
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: Authorization
+          in: header
+          description: ''
+          required: true
+          example: Bearer {{token}}
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                quantity:
+                  type: integer
+              required:
+                - id
+                - quantity
+            example:
+              username: '{{$internet.userName}}'
+              password: password
+              firstName: '{{$person.firstName}}'
+              lastName: '{{$person.lastName}}'
+              emailAddress: '{{$internet.email}}'
+              address: '{{$location.streetAddress}}'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/octet-stream:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /rest/user:
+    post:
+      summary: Create User
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: Authorization
+          in: header
+          description: ''
+          required: true
+          example: Bearer {{token}}
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                quantity:
+                  type: integer
+              required:
+                - id
+                - quantity
+            example:
+              username: '{{$internet.userName}}'
+              password: password
+              firstName: '{{$person.firstName}}'
+              lastName: '{{$person.lastName}}'
+              emailAddress: '{{$internet.email}}'
+              address: '{{$location.streetAddress}}'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/octet-stream:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /rest/user/1:
+    patch:
+      summary: Update
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: Authorization
+          in: header
+          description: ''
+          required: true
+          example: Bearer {{token}}
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                quantity:
+                  type: integer
+              required:
+                - id
+                - quantity
+            example:
+              username: '{{$internet.userName}}'
+              password: password
+              firstName: '{{$person.firstName}}'
+              lastName: '{{$person.lastName}}'
+              emailAddress: '{{$internet.email}}'
+              address: '{{$location.streetAddress}}'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/octet-stream:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /rest/shoppingCart/get:
+    get:
+      summary: Get
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: Authorization
+          in: header
+          description: ''
+          required: true
+          example: Bearer {{token}}
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+            example: ''
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /rest/shoppingCart/addProduct:
+    patch:
+      summary: Add Product
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: Authorization
+          in: header
+          description: ''
+          required: true
+          example: Bearer {{token}}
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                quantity:
+                  type: integer
+              required:
+                - id
+                - quantity
+            example:
+              id: 1
+              quantity: 10
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /rest/shoppingCart/decreaseProductQuantity:
+    patch:
+      summary: Decrease Product Quantity
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: Authorization
+          in: header
+          description: ''
+          required: true
+          example: Bearer {{token}}
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                quantity:
+                  type: integer
+              required:
+                - id
+                - quantity
+            example:
+              id: 1
+              quantity: 10
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /rest/shoppingCart/removeProduct:
+    patch:
+      summary: Remove Product
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: Authorization
+          in: header
+          description: ''
+          required: true
+          example: Bearer {{token}}
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                quantity:
+                  type: integer
+              required:
+                - id
+                - quantity
+            example:
+              id: 1
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /rest/order/list:
+    get:
+      summary: List
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: Authorization
+          in: header
+          description: ''
+          required: true
+          example: Bearer {{token}}
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+            examples: {}
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /rest/order/checkout:
+    get:
+      summary: Checkout
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: Authorization
+          in: header
+          description: ''
+          required: true
+          example: Bearer {{token}}
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+            examples: {}
+      responses:
+        '200':
+          description: ''
+          content:
+            application/octet-stream:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /rest/order/backOffice/list:
+    get:
+      summary: Back Office List
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: customerId
+          in: query
+          description: ''
+          required: false
+          example: '0'
+          schema:
+            type: string
+        - name: Authorization
+          in: header
+          description: ''
+          required: true
+          example: Bearer {{token}}
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+            examples: {}
+      responses:
+        '200':
+          description: ''
+          content:
+            application/octet-stream:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+  /rest/order/backOffice/listcustomerId=1:
+    get:
+      summary: Back Office List Copy
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: Authorization
+          in: header
+          description: ''
+          required: true
+          example: Bearer {{token}}
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+            examples: {}
+      responses:
+        '200':
+          description: ''
+          content:
+            application/octet-stream:
+              schema:
+                type: object
+                properties: {}
+          headers: {}
+      security: []
+webhooks: {}
+components:
+  schemas: {}
+  responses: {}
+  securitySchemes: {}
+servers: []
+security: []

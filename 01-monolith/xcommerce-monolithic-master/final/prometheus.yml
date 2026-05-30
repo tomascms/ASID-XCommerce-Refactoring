@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'xcommerce-app'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['monolithic-container:8080']

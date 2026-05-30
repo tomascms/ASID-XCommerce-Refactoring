@@ -1,5 +1,6 @@
 package ma.aui.sse.it.xcommerce.monolithic.data.entities;
 
+import java.io.Serializable;
 import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -13,7 +14,7 @@ import javax.validation.constraints.NotNull;
  * @author Omar IRAQI
  */
 @Entity
-public class Category extends BaseEntity {
+public class Category extends BaseEntity implements Serializable {
 
     private static final long serialVersionUID = 512632343574588379L;
 

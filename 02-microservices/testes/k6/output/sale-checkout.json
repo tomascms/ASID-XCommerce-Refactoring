@@ -1,0 +1,90 @@
+{
+    "metrics": {
+        "http_req_receiving": {
+            "min": 0.057,
+            "med": 0.057,
+            "max": 0.057,
+            "p(90)": 0.057,
+            "p(95)": 0.057,
+            "avg": 0.057
+        },
+        "http_reqs": {
+            "count": 1,
+            "rate": 10.036029345349807
+        },
+        "http_req_duration": {
+            "avg": 96.966,
+            "min": 96.966,
+            "med": 96.966,
+            "max": 96.966,
+            "p(90)": 96.966,
+            "p(95)": 96.966,
+            "thresholds": {
+                "p(95)<1000": false
+            }
+        },
+        "http_req_failed": {
+            "passes": 1,
+            "fails": 0,
+            "thresholds": {
+                "rate<0.05": true
+            },
+            "value": 1
+        },
+        "http_req_blocked": {
+            "avg": 1.982,
+            "min": 1.982,
+            "med": 1.982,
+            "max": 1.982,
+            "p(90)": 1.982,
+            "p(95)": 1.982
+        },
+        "http_req_connecting": {
+            "p(90)": 0.2,
+            "p(95)": 0.2,
+            "avg": 0.2,
+            "min": 0.2,
+            "med": 0.2,
+            "max": 0.2
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "data_sent": {
+            "count": 182,
+            "rate": 1826.5573408536648
+        },
+        "data_received": {
+            "count": 285,
+            "rate": 2860.268363424695
+        },
+        "http_req_sending": {
+            "max": 0.041,
+            "p(90)": 0.041,
+            "p(95)": 0.041,
+            "avg": 0.041,
+            "min": 0.041,
+            "med": 0.041
+        },
+        "http_req_waiting": {
+            "max": 96.868,
+            "p(90)": 96.868,
+            "p(95)": 96.868,
+            "avg": 96.868,
+            "min": 96.868,
+            "med": 96.868
+        }
+    },
+    "root_group": {
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {},
+        "name": ""
+    }
+}

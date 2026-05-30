@@ -1,5 +1,7 @@
 package ma.aui.sse.it.xcommerce.monolithic.controllers;
 
+import ma.aui.sse.it.xcommerce.monolithic.data.repositories.UserRepository;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,20 +23,20 @@ import ma.aui.sse.it.xcommerce.monolithic.services.OrderService;
 public class OrderRestController {
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private OrderService orderService;
 
-
     @GetMapping("/list")
-    public List<Order> getOrdersByCustomer() {
-        //Retrieve customerId from JWT
-        long customerId = 1; //To be removed
+    public List<Order> getOrdersByCustomer(Authentication auth){
+        long customerId = userRepository.findByUsername(auth.getName()).getId();
         return orderService.getOrdersByCustomer(customerId);
     }
 
     @GetMapping("/checkout")
-    public void checkout() {
-        //Retrieve customerId from JWT
-        long customerId = 1; //To be removed
+    public void checkout(Authentication auth){
+        long customerId = userRepository.findByUsername(auth.getName()).getId();
         orderService.checkout(customerId);
     }
 
