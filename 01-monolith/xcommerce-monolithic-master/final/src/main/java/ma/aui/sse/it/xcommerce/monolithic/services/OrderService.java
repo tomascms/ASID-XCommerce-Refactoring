@@ -46,11 +46,33 @@ public class OrderService {
 
         // Validacao de stock antes de criar a order — paridade funcional
         // com o inventory-service dos microservicos. Apenas valida; nao decrementa.
+        // Os Products no carrinho podem vir do cache Redis sem estado completo do Hibernate;
+        // por isso, recarregamos cada produto a partir do repositorio antes de validar.
         for (Map.Entry<Product, Integer> entry : shoppingCart.getSelectedProducts().entrySet()) {
             Product cartProduct = entry.getKey();
             int requestedQty = entry.getValue();
-            Product current = productRepository.findById(cartProduct.getId()).orElseThrow(
-                () -> new RuntimeException("Produto nao encontrado: " + cartProduct.getId()));
+
+            Long productId = cartProduct.getId();
+            if (productId == null) {
+                // Fallback: tentar resolver via toString se o id nao foi preservado pelo cache.
+                String key = cartProduct.toString();
+                int idx = key.lastIndexOf('@');
+                if (idx > 0) {
+                    try {
+                        productId = Long.parseLong(key.substring(idx + 1));
+                    } catch (NumberFormatException ignored) {
+                        // continua null — sera tratado abaixo
+                    }
+                }
+            }
+            if (productId == null) {
+                throw new RuntimeException(
+                    "Produto no carrinho sem id resolvivel (estado: " + cartProduct + ")");
+            }
+
+            Long pid = productId;
+            Product current = productRepository.findById(pid).orElseThrow(
+                () -> new RuntimeException("Produto nao encontrado: " + pid));
             if (current.getQuantity() < requestedQty) {
                 throw new RuntimeException(
                     "Stock insuficiente para o produto " + current.getId()

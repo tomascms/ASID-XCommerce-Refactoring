@@ -5,7 +5,6 @@ import com.xcommerce.identity.dto.LoginResponse;
 import com.xcommerce.identity.dto.RegisterRequest;
 import com.xcommerce.identity.model.User;
 import com.xcommerce.identity.repository.UserRepository;
-import com.xcommerce.identity.service.AuthProducer;
 import com.xcommerce.identity.service.TokenService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +26,6 @@ public class AuthController {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private AuthProducer authProducer;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -72,7 +68,6 @@ public class AuthController {
                 && passwordEncoder.matches(data.password(), user.getPassword())) {
             String subject = user.getUsername() != null && !user.getUsername().isBlank() ? user.getUsername() : user.getEmail();
             String token = tokenService.generateToken(subject, user.getRole());
-            authProducer.sendLoginEvent(subject);
             return ResponseEntity.ok(new LoginResponse(token));
         }
 

@@ -252,5 +252,4 @@ Authorization: Bearer {{tokenAdmin}}
 #   - payment-events
 #   - order-confirmed-events
 #   - order-cancelled-events
-#   - user-events
 #   - product-events

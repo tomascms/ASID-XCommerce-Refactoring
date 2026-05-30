@@ -15,25 +15,19 @@ public class NotificationConsumer {
         this.retryService = retryService;
     }
 
-    // 1. Notificar Login 
-    @KafkaListener(topics = "user-events", groupId = "notification-group")
-    public void consumeAuthEvents(String message) {
-        retryService.executeWithBackoff("auth notification", () -> deliver("📧 [NOTIFICATION] Login Alert - Enviando confirmação: {}", message));
-    }
-
-    // 2. Notificar Novo Produto 
+    // 1. Notificar Novo Produto
     @KafkaListener(topics = "product-events", groupId = "notification-group")
     public void consumeProductEvents(String message) {
         retryService.executeWithBackoff("product notification", () -> deliver("📢 [NOTIFICATION] Newsletter - Novo produto adicionado: {}", message));
     }
 
-    // 3. Notificar Encomenda 
+    // 2. Notificar Encomenda
     @KafkaListener(topics = "order-placed-events", groupId = "notification-group")
     public void consumeOrderEvents(String message) {
         retryService.executeWithBackoff("order notification", () -> deliver("📦 [NOTIFICATION] Order Confirmation - Pedido criado: {}", message));
     }
-    
-    // 4. Notificar Pagamento Bem-Sucedido
+
+    // 3. Notificar Pagamento Bem-Sucedido
     @KafkaListener(topics = "payment-events", groupId = "notification-group")
     public void consumePaymentEvents(String message) {
         retryService.executeWithBackoff("payment notification", () -> {
@@ -44,14 +38,14 @@ public class NotificationConsumer {
             }
         });
     }
-    
-    // 5. Notificar Confirmação de Pedido
+
+    // 4. Notificar Confirmação de Pedido
     @KafkaListener(topics = "order-confirmed-events", groupId = "notification-group")
     public void consumeOrderConfirmedEvents(String message) {
         retryService.executeWithBackoff("order-confirmed notification", () -> deliver("✅ [NOTIFICATION] Order Confirmed - Pedido confirmado após pagamento: {}", message));
     }
-    
-    // 6. Notificar Cancelamento de Pedido
+
+    // 5. Notificar Cancelamento de Pedido
     @KafkaListener(topics = "order-cancelled-events", groupId = "notification-group")
     public void consumeOrderCancelledEvents(String message) {
         retryService.executeWithBackoff("order-cancelled notification", () -> deliver("❌ [NOTIFICATION] Order Cancelled - Pedido cancelado: {}", message));
