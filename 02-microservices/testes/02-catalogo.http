@@ -1,0 +1,255 @@
+### XCommerce — Workflow 2: Catálogo (produtos e categorias)
+### Gateway: http://localhost:9000
+### Compatível com IntelliJ HTTP Client / VS Code REST Client
+###
+### PRÉ-REQUISITO: token admin obtido em 01-auth.http (passo 3a)
+###
+### ORDEM DE EXECUÇÃO:
+###   1. Leituras públicas (sem token)
+###   2. Criar categoria (admin)
+###   3. Criar produto (admin)
+###   4. Atualizar produto (admin)
+###   5. Pesquisa e filtros
+###   6. Reviews de produto (customer)
+###   7. Apagar produto (admin)
+
+# ─────────────────────────────────────────────────────────
+# VARIÁVEIS
+# ─────────────────────────────────────────────────────────
+@gateway       = http://localhost:9000
+@tokenAdmin    = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhdXRoLWFwaSIsInN1YiI6ImFkbWluIiwicm9sZSI6IkFETUlOIiwiZXhwIjoxNzc5OTc2ODU1fQ.gruxnxgJPL8MJ0ReLCS-rBNzUv5vcXeTfhI3n1bRf5I
+@tokenCustomer = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhdXRoLWFwaSIsInN1YiI6ImFkbWluIiwicm9sZSI6IkFETUlOIiwiZXhwIjoxNzc5OTc2ODU1fQ.gruxnxgJPL8MJ0ReLCS-rBNzUv5vcXeTfhI3n1bRf5I
+
+# Preencher após criar categoria e produto (passos 2 e 3)
+@categoryId = 1
+@productId  = 1
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 1 — Leituras públicas (sem token)
+# ─────────────────────────────────────────────────────────
+
+### 1a. Listar todos os produtos (público)
+# Resultado esperado: 200 OK + lista de produtos
+GET {{gateway}}/products
+
+
+### 1b. Listar categorias (público)
+# Resultado esperado: 200 OK + lista de categorias
+GET {{gateway}}/categories
+
+
+### 1c. Obter produto por ID
+# Resultado esperado: 200 OK + detalhes do produto
+GET {{gateway}}/products/{{productId}}
+
+
+### 1d. Obter preço do produto
+# Resultado esperado: 200 OK + { "price": ... }
+GET {{gateway}}/products/{{productId}}/price
+
+
+### 1e. Produto inexistente
+# Resultado esperado: 404 Not Found
+GET {{gateway}}/products/99999
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 2 — Criar categoria (admin)
+# ─────────────────────────────────────────────────────────
+
+### 2a. Criar categoria de electrónica
+# Resultado esperado: 201 Created + { "id": ..., "name": "Electrónica" }
+# → copiar "id" e substituir em @categoryId acima
+POST {{gateway}}/categories
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "name": "Electrónica",
+  "description": "Smartphones, tablets e acessórios tecnológicos"
+}
+
+
+### 2b. Criar categoria de vestuário
+# Resultado esperado: 201 Created
+POST {{gateway}}/categories
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "name": "Vestuário",
+  "description": "Roupas e acessórios de moda"
+}
+
+
+### 2c. Tentar criar categoria sem token (deve falhar)
+# Resultado esperado: 401 Unauthorized
+POST {{gateway}}/categories
+Content-Type: application/json
+
+{
+  "name": "Categoria Não Autorizada"
+}
+
+
+### 2d. Atualizar categoria
+# Resultado esperado: 200 OK
+PUT {{gateway}}/categories/{{categoryId}}
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "name": "Electrónica & Tecnologia",
+  "description": "Smartphones, tablets, laptops e acessórios"
+}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 3 — Criar produto (admin)
+# ─────────────────────────────────────────────────────────
+
+### 3a. Criar smartphone
+# Resultado esperado: 201 Created + produto com id
+# → copiar "id" e substituir em @productId acima
+# NOTA: isto também publica evento em Kafka → inventory-service inicializa stock
+POST {{gateway}}/products
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "name": "Samsung Galaxy S24",
+  "description": "Smartphone flagship Android com câmara de 200MP",
+  "price": 899.99,
+  "brand": "Samsung",
+  "categoryId": {{categoryId}},
+  "initialStock": 50
+}
+
+
+### 3b. Criar outro produto
+# Resultado esperado: 201 Created
+POST {{gateway}}/products
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "name": "iPhone 15 Pro",
+  "description": "Smartphone Apple com chip A17 Pro e titanium design",
+  "price": 1199.99,
+  "brand": "Apple",
+  "categoryId": {{categoryId}},
+  "initialStock": 30
+}
+
+
+### 3c. Criar produto sem autorização (deve falhar)
+# Resultado esperado: 401 Unauthorized (sem token) ou 403 Forbidden (customer)
+POST {{gateway}}/products
+Authorization: Bearer {{tokenCustomer}}
+Content-Type: application/json
+
+{
+  "name": "Produto Não Autorizado",
+  "price": 9.99
+}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 4 — Atualizar produto (admin)
+# ─────────────────────────────────────────────────────────
+
+### 4a. Atualizar preço e descrição
+# Resultado esperado: 200 OK + produto atualizado
+PUT {{gateway}}/products/{{productId}}
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "name": "Samsung Galaxy S24",
+  "description": "Smartphone flagship Android — PROMOÇÃO: câmara 200MP, bateria 4000mAh",
+  "price": 799.99,
+  "brand": "Samsung",
+  "categoryId": {{categoryId}}
+}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 5 — Pesquisa e filtros (público)
+# ─────────────────────────────────────────────────────────
+
+### 5a. Pesquisar por nome
+# Resultado esperado: 200 OK + produtos filtrados
+GET {{gateway}}/products/search?name=Samsung
+
+
+### 5b. Pesquisar por categoria
+GET {{gateway}}/products/search?categoryId={{categoryId}}
+
+
+### 5c. Pesquisar por marca
+GET {{gateway}}/products/search?brand=Apple
+
+
+### 5d. Pesquisar por intervalo de preço
+GET {{gateway}}/products/search?minPrice=100&maxPrice=1000
+
+
+### 5e. Pesquisa combinada (nome + marca)
+GET {{gateway}}/products/search?name=Galaxy&brand=Samsung
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 6 — Reviews de produto
+# ─────────────────────────────────────────────────────────
+
+### 6a. Ver reviews do produto (público)
+# Resultado esperado: 200 OK + lista de reviews (pode estar vazia)
+GET {{gateway}}/products/{{productId}}/reviews
+
+
+### 6b. Adicionar review (customer autenticado)
+# Resultado esperado: 201 Created
+POST {{gateway}}/products/{{productId}}/reviews
+Authorization: Bearer {{tokenCustomer}}
+Content-Type: application/json
+
+{
+  "rating": 5,
+  "comment": "Excelente smartphone! Câmara fantástica e bateria dura o dia todo."
+}
+
+
+### 6c. Adicionar review negativa
+# Resultado esperado: 201 Created
+POST {{gateway}}/products/{{productId}}/reviews
+Authorization: Bearer {{tokenCustomer}}
+Content-Type: application/json
+
+{
+  "rating": 2,
+  "comment": "Preço demasiado elevado para o que oferece. Dececionante."
+}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 7 — Apagar produto e desativar categoria (admin)
+# ─────────────────────────────────────────────────────────
+
+### 7a. Apagar produto (admin)
+# Resultado esperado: 200 OK ou 204 No Content
+# ATENÇÃO: apagar produto com stock pode deixar inventário inconsistente
+DELETE {{gateway}}/products/{{productId}}
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 7b. Desativar categoria
+# Resultado esperado: 200 OK
+PATCH {{gateway}}/categories/{{categoryId}}/deactivate
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 7c. Tentar apagar produto como customer (deve falhar)
+# Resultado esperado: 403 Forbidden
+DELETE {{gateway}}/products/2
+Authorization: Bearer {{tokenCustomer}}

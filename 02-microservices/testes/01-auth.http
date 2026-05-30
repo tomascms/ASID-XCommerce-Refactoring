@@ -1,0 +1,134 @@
+### XCommerce — Workflow 1: Autenticação
+### Gateway: http://localhost:9000
+### Compatível com IntelliJ HTTP Client / VS Code REST Client
+###
+### ORDEM DE EXECUÇÃO:
+###   1. Registar novo customer
+###   2. Login como customer → copiar token para @tokenCustomer
+###   3. Login como admin → copiar token para @tokenAdmin
+###   4. (Opcional) Criar admin via superadmin
+
+# ─────────────────────────────────────────────────────────
+# VARIÁVEIS — ajustar depois de obter tokens nos passos 2 e 3
+# ─────────────────────────────────────────────────────────
+@gateway = http://localhost:9000
+
+# Preencher após fazer login (passo 2 e 3)
+@tokenCustomer = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhdXRoLWFwaSIsInN1YiI6ImpvYW8uc2lsdmEiLCJyb2xlIjoiQ1VTVE9NRVIiLCJleHAiOjE3Nzk5NzY3NjJ9.Lkr75VeoTMVbfCEBCPpfNmRpFY-wjeNBGINo1dJyz2o
+@tokenAdmin    = SUBSTITUIR_PELO_TOKEN_ADMIN
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 1 — Registar novo customer
+# ─────────────────────────────────────────────────────────
+
+### 1a. Registar customer (via auth-service — rota pública)
+# Público — sem Authorization
+# Resultado esperado: 201 Created + { "token": "..." }
+POST {{gateway}}/rest/user/register
+Content-Type: application/json
+
+{
+  "username": "joao.silva",
+  "password": "password123",
+  "email": "joao.silva@example.com",
+  "firstName": "João",
+  "lastName": "Silva"
+}
+
+# ─────────────────────────────────────────────────────────
+# PASSO 2 — Login como customer
+# ─────────────────────────────────────────────────────────
+
+### 2a. Login customer (via /rest/user/login)
+# Público — sem Authorization
+# Resultado esperado: 200 OK + { "token": "eyJ..." }
+# → copiar valor de "token" e substituir em @tokenCustomer acima
+POST {{gateway}}/rest/user/login
+Content-Type: application/json
+
+{
+  "username": "joao.silva",
+  "password": "password123"
+}
+
+
+### 2b. Login customer (via /rest/user/authenticate — alias)
+# Resultado esperado: 200 OK + { "token": "eyJ..." }
+POST {{gateway}}/rest/user/authenticate
+Content-Type: application/json
+
+{
+  "username": "joao.silva",
+  "password": "password123"
+}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 3 — Login como admin
+# ─────────────────────────────────────────────────────────
+
+### 3a. Login admin (credenciais padrão do projecto)
+# Resultado esperado: 200 OK + { "token": "eyJ..." }
+# → copiar valor de "token" e substituir em @tokenAdmin acima
+POST {{gateway}}/rest/user/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 4 — Aceder ao próprio perfil (token necessário)
+# ─────────────────────────────────────────────────────────
+
+### 4a. Ver perfil do utilizador autenticado (por username)
+# Requer: @tokenCustomer preenchido
+# Resultado esperado: 200 OK + dados do utilizador
+GET {{gateway}}/rest/user/by-username/joao.silva
+Authorization: Bearer {{tokenCustomer}}
+
+
+### 4b. Ver perfil como admin (qualquer user)
+# Requer: @tokenAdmin preenchido
+# Resultado esperado: 200 OK
+GET {{gateway}}/rest/user/by-username/joao.silva
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 4c. Tentar aceder sem token (rota protegida)
+# Resultado esperado: 401 Unauthorized (bloqueado no Gateway)
+GET {{gateway}}/rest/user/by-username/joao.silva
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 5 — Gestão de utilizadores (admin only)
+# ─────────────────────────────────────────────────────────
+
+### 5a. Listar todos os utilizadores (admin)
+# Resultado esperado: 200 OK + lista de utilizadores
+GET {{gateway}}/rest/user
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 5b. Tentar listar utilizadores como customer (deve falhar)
+# Resultado esperado: 403 Forbidden
+GET {{gateway}}/rest/user
+Authorization: Bearer {{tokenCustomer}}
+
+
+### 5c. Criar utilizador admin (só admin pode)
+# Resultado esperado: 201 Created
+POST {{gateway}}/rest/user/admin
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "username": "gestor.loja",
+  "password": "admin123",
+  "email": "gestor@xcommerce.pt",
+  "firstName": "Gestor",
+  "lastName": "Loja"
+}

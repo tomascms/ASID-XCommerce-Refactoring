@@ -1,0 +1,355 @@
+services:
+  # --- BASES DE DADOS (uma instância PostgreSQL por serviço) ---
+  db-auth:
+    image: postgres:15-alpine
+    container_name: xcommerce-db-auth
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=xcommerce_auth
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_auth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [xcommerce-network]
+
+  db-catalog:
+    image: postgres:15-alpine
+    container_name: xcommerce-db-catalog
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=xcommerce_catalog
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_catalog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [xcommerce-network]
+
+  db-cart:
+    image: postgres:15-alpine
+    container_name: xcommerce-db-cart
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=xcommerce_cart
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_cart"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [xcommerce-network]
+
+  db-orders:
+    image: postgres:15-alpine
+    container_name: xcommerce-db-orders
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=xcommerce_orders
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_orders"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [xcommerce-network]
+
+  db-inventory:
+    image: postgres:15-alpine
+    container_name: xcommerce-db-inventory
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=xcommerce_inventory
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_inventory"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [xcommerce-network]
+
+  db-users:
+    image: postgres:15-alpine
+    container_name: xcommerce-db-users
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=xcommerce_users
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_users"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [xcommerce-network]
+
+  db-payment:
+    image: postgres:15-alpine
+    container_name: xcommerce-db-payment
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=xcommerce_payment
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_payment"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [xcommerce-network]
+
+  db-notification:
+    image: postgres:15-alpine
+    container_name: xcommerce-db-notification
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=xcommerce_notification
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_notification"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [xcommerce-network]
+
+  db-keycloak:
+    image: postgres:15-alpine
+    container_name: xcommerce-db-keycloak
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=xcommerce_keycloak
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [xcommerce-network]
+
+  # --- MENSAGERIA ---
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: xcommerce-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - xcommerce-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: xcommerce-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_ENABLE_KRAFT: "false"
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - xcommerce-network
+
+  # --- IDENTITY & ACCESS MANAGEMENT ---
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: xcommerce-keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://xcommerce-db-keycloak:5432/xcommerce_keycloak
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: postgres
+      KC_HOSTNAME: keycloak
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT: "false"
+      KC_PROXY: edge
+    ports: ["8090:8080"]
+    depends_on:
+      db-keycloak: { condition: service_healthy }
+    networks: [xcommerce-network]
+    healthcheck:
+      test: ["CMD-SHELL", "cat < /dev/null > /dev/tcp/localhost/8080"]
+      interval: 20s
+      timeout: 10s
+      retries: 15
+      start_period: 30s
+    command: start-dev
+
+  # --- OBSERVABILIDADE ---
+  kafdrop:
+    image: obsidiandynamics/kafdrop:latest
+    container_name: xcommerce-kafdrop
+    depends_on: [kafka]
+    ports: ["9001:9000"]
+    environment:
+      KAFKA_BROKERCONNECT: "kafka:29092"
+    networks: [xcommerce-network]
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: xcommerce-jaeger
+    ports: ["16686:16686", "4317:4317", "4318:4318"]
+    networks: [xcommerce-network]
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: xcommerce-prometheus
+    volumes: ["./prometheus.yml:/etc/prometheus/prometheus.yml"]
+    ports: ["9090:9090"]
+    networks: [xcommerce-network]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: xcommerce-grafana
+    ports: ["3000:3000"]
+    depends_on: [prometheus]
+    networks: [xcommerce-network]
+
+  # --- MICROSERVIÇOS ---
+  auth-service:
+    build: ./auth-service
+    container_name: xcommerce-auth-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      db-auth: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
+    networks: [xcommerce-network]
+
+  catalog-service:
+    build: ./catalog-service
+    container_name: xcommerce-catalog-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      db-catalog: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks: [xcommerce-network]
+
+  inventory-service:
+    build: ./inventory-service
+    container_name: xcommerce-inventory-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      db-inventory: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks: [xcommerce-network]
+
+  cart-service:
+    build: ./cart-service
+    container_name: xcommerce-cart-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      db-cart: { condition: service_healthy }
+    networks: [xcommerce-network]
+
+  order-service:
+    build: ./order-service
+    container_name: xcommerce-order-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      db-orders: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks: [xcommerce-network]
+
+  user-service:
+    build: ./user-service
+    container_name: xcommerce-user-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8086/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      db-users: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks: [xcommerce-network]
+
+  # payment-service removed from compose (archived). See docs for migration notes.
+
+  notification-service:
+    build: ./notification-service
+    container_name: xcommerce-notification-service
+    environment:
+      - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8088/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      db-notification: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    networks: [xcommerce-network]
+
+  gateway:
+    build: ./api-gateway
+    container_name: xcommerce-gateway
+    ports: ["9000:9000"]
+    environment:
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9000/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      auth-service: { condition: service_healthy }
+      catalog-service: { condition: service_healthy }
+      cart-service: { condition: service_healthy }
+      order-service: { condition: service_healthy }
+      inventory-service: { condition: service_healthy }
+      user-service: { condition: service_healthy }
+      # payment-service removed: no longer required by gateway
+      notification-service: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
+    networks: [xcommerce-network]
+
+networks:
+  xcommerce-network:
+    driver: bridge

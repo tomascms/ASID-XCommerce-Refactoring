@@ -1,0 +1,240 @@
+### XCommerce — Workflow 5: Estado Zombie (ausência de Saga compensatória)
+### Gateway: http://localhost:9000
+### Compatível com IntelliJ HTTP Client / VS Code REST Client
+###
+### PRÉ-REQUISITO: token customer e produto com stock existentes
+###
+### OBJECTIVO DESTE WORKFLOW:
+###   Demonstrar a inconsistência de dados causada pela ausência de Saga.
+###   NOTE: `payment-service` foi removido da stack — este workflow foi mantido como
+###   referência histórica. Os passos que param/arrancam o `payment-service` não são
+###   aplicáveis enquanto o serviço estiver arquivado. Adaptações são necessárias para
+###   validar rollback/idempotência sem o consumer `payment-service`.
+###
+### FLUXO NORMAL (sem falha):
+###   checkout → order HANDLING → Kafka order-placed-events
+###   → inventory decrementa stock
+###   → payment processa (2s, 80% sucesso)
+###   → payment-events SUCCESSFUL → order CONFIRMED
+###   → order-confirmed-events → notificação
+###
+### FLUXO ZOMBIE (payment-service parado):
+###   checkout → order HANDLING → Kafka order-placed-events
+###   → inventory decrementa stock  ← stock decrementado ✓
+###   → payment-service parado → sem consumo do evento
+###   → order permanece HANDLING (zombie) ← INCONSISTÊNCIA
+###   → stock nunca restaurado ← INCONSISTÊNCIA
+###
+### ESTE É O T-MICRO-4 DO PLANO DE TESTES
+### Resultado já obtido: order id=138 · stock 306→304 · status=HANDLING
+### Evidência: resultados/t-micro-4-estado-zombie-20260527-165205.txt
+###
+### INSTRUÇÕES DE EXECUÇÃO MANUAL:
+###   TERMINAL 1 (este ficheiro .http):
+###     1. Executar passo 1 (verificar stock inicial)
+###     2. Executar passo 2 (fazer checkout)
+###   TERMINAL 2 (bash): imediatamente após passo 2:
+###     docker stop $(docker ps --format "{{.Names}}" | grep payment)
+###   TERMINAL 1: depois de 5-10 segundos:
+###     3. Executar passo 3 (verificar estado zombie)
+###     4. Executar passo 4 (confirmar inconsistência)
+###   TERMINAL 2 (bash): restaurar serviço:
+###     docker start $(docker ps -a --format "{{.Names}}" | grep payment)
+
+# ─────────────────────────────────────────────────────────
+# VARIÁVEIS
+# ─────────────────────────────────────────────────────────
+@gateway       = http://localhost:9000
+@tokenCustomer = SUBSTITUIR_PELO_TOKEN_CUSTOMER
+@tokenAdmin    = SUBSTITUIR_PELO_TOKEN_ADMIN
+
+# Preencher após o checkout (passo 2)
+@productId = 1
+@orderId   = SUBSTITUIR_PELO_ID_ORDER_CRIADA
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 1 — Estado inicial (ANTES de parar o payment-service)
+# ─────────────────────────────────────────────────────────
+
+### 1a. Verificar stock ANTES do checkout
+# Resultado esperado: 200 OK + stock actual
+# → anotar o valor de "quantity" (ex: 50)
+GET {{gateway}}/inventory/check?productId={{productId}}&quantity=1
+Authorization: Bearer {{tokenCustomer}}
+
+
+### 1b. Adicionar produto ao carrinho (preparar checkout)
+PATCH {{gateway}}/rest/shoppingCart/addProduct
+Authorization: Bearer {{tokenCustomer}}
+Content-Type: application/json
+
+{
+  "productId": {{productId}},
+  "quantity": 2
+}
+
+
+### 1c. Confirmar carrinho antes do checkout
+GET {{gateway}}/rest/shoppingCart
+Authorization: Bearer {{tokenCustomer}}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 2 — Checkout (DEPOIS parar payment-service imediatamente)
+# ─────────────────────────────────────────────────────────
+#
+# ⚠️  ATENÇÃO: Este repositório já não contém um `payment-service` activo. Se precisares
+# de reproduzir o cenário zombie, reimplanta um consumer que consuma `order-placed-events`
+# e pare-o manualmente. Os comandos que usam `grep payment` não funcionarão neste setup.
+#
+#     O payment-service tem 2 segundos de delay antes de processar.
+#     É preciso parar o container ANTES desses 2 segundos.
+#
+# ─────────────────────────────────────────────────────────
+
+### 2a. Checkout — DISPARAR E DEPOIS PARAR payment-service
+# Resultado esperado: 200 OK + { "orderId": N, "status": "HANDLING" }
+# → copiar orderId e substituir em @orderId acima
+# → ir imediatamente ao terminal e parar payment-service
+POST {{gateway}}/rest/order/checkout
+Authorization: Bearer {{tokenCustomer}}
+Content-Type: application/json
+
+{}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 3 — Verificar estado zombie (aguardar 5-10 segundos após passo 2)
+# ─────────────────────────────────────────────────────────
+
+### 3a. Verificar status da order (deve estar HANDLING — zombie)
+# Resultado esperado: 200 OK + { "status": "HANDLING" }
+# Se status = HANDLING após 5s → zombie confirmado
+# (sem payment-service, o evento order-placed-events nunca é consumido)
+GET {{gateway}}/rest/order/{{orderId}}
+Authorization: Bearer {{tokenCustomer}}
+
+
+### 3b. Verificar stock APÓS checkout (deve estar decrementado)
+# Resultado esperado: quantity = stock_inicial - 2
+# Se stock diminuiu MAS order está HANDLING → INCONSISTÊNCIA confirmada
+# inventory-service consumiu order-placed-events (Kafka separado do payment)
+GET {{gateway}}/inventory/check?productId={{productId}}&quantity=1
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 3c. Verificar que carrinho está vazio (foi limpo pelo checkout)
+# Resultado esperado: carrinho vazio
+# Cart limpo + stock decrementado + order HANDLING = dados inconsistentes
+GET {{gateway}}/rest/shoppingCart
+Authorization: Bearer {{tokenCustomer}}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 4 — Confirmar inconsistência (10-30 segundos após passo 2)
+# ─────────────────────────────────────────────────────────
+
+### 4a. Verificar order ainda em HANDLING (estado permanente)
+# Com payment-service parado, o evento Kafka nunca é re-processado.
+# A order fica em HANDLING indefinidamente — "ordem zombie".
+# → Comparar com fluxo normal onde order transita para CONFIRMED ou CANCELLED
+GET {{gateway}}/rest/order/{{orderId}}
+Authorization: Bearer {{tokenCustomer}}
+
+
+### 4b. Verificar lista de orders do customer
+# A order zombie aparece na lista com status HANDLING permanente
+GET {{gateway}}/rest/order/list
+Authorization: Bearer {{tokenCustomer}}
+
+
+### 4c. Verificar lista global de orders (admin)
+# Admin pode ver a order zombie com detalhes completos
+GET {{gateway}}/rest/order/backOffice/list
+Authorization: Bearer {{tokenAdmin}}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 5 — Restaurar payment-service e verificar comportamento
+# ─────────────────────────────────────────────────────────
+#
+# Ao restaurar o payment-service, ele vai consumir os eventos Kafka pendentes.
+# Dependendo da configuração do consumer group, pode ainda processar o evento
+# e resolver o estado zombie — ou não, se o offset já foi avançado.
+#
+# TERMINAL: docker start $(docker ps -a --format "{{.Names}}" | grep payment)
+#
+# ─────────────────────────────────────────────────────────
+
+### 5a. Verificar health do payment-service após restart
+GET http://localhost:8087/actuator/health
+
+
+### 5b. Verificar order após restaurar payment-service (aguardar 5s)
+# Se Kafka ainda tem o evento (offset não avançado):
+#   → order pode transitar para CONFIRMED ou CANCELLED
+# Se offset foi avançado / evento expirou:
+#   → order permanece HANDLING (zombie permanente sem intervenção manual)
+GET {{gateway}}/rest/order/{{orderId}}
+Authorization: Bearer {{tokenCustomer}}
+
+
+### 5c. Verificar stock após restaurar payment-service
+# Se order processada como CONFIRMED: stock permanece decrementado
+# Se order processada como CANCELLED: stock restaurado via order-cancelled-events
+# Se order permanece HANDLING: stock decrementado sem resolução → ZOMBIE
+GET {{gateway}}/inventory/check?productId={{productId}}&quantity=1
+Authorization: Bearer {{tokenAdmin}}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 6 — Resolução manual do estado zombie (admin)
+# ─────────────────────────────────────────────────────────
+# Sem Saga implementada, a única resolução é intervenção manual pelo admin.
+
+### 6a. Admin força cancelamento da order zombie
+# Resultado esperado: 200 OK + status CANCELLED
+# NOTA: forçar CANCELLED via REST não publica order-cancelled-events automaticamente
+# → stock pode não ser restaurado automaticamente (depende da implementação)
+PATCH {{gateway}}/rest/order/{{orderId}}/status
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "status": "CANCELLED"
+}
+
+
+### 6b. Verificar stock após cancelamento manual
+# Se stock não foi restaurado → confirma que a resolução manual é incompleta
+# → necessidade de Saga compensatória fica provada
+GET {{gateway}}/inventory/check?productId={{productId}}&quantity=1
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 6c. Restaurar stock manualmente (workaround sem Saga)
+# Admin tem de corrigir o stock manualmente — processo propenso a erros
+POST {{gateway}}/inventory/sync?productId={{productId}}&quantity=50
+Authorization: Bearer {{tokenAdmin}}
+
+
+# ─────────────────────────────────────────────────────────
+# RESUMO DO ESTADO ZOMBIE
+# ─────────────────────────────────────────────────────────
+#
+# EVIDÊNCIA DE INCONSISTÊNCIA (confirmada em T-MICRO-4):
+#   → Stock decrementado: 306 → 304 (inventory consumiu Kafka event)
+#   → Order em HANDLING: id=138, status permanece HANDLING
+#   → Carrinho limpo: vazio (checkout foi completado)
+#   → Pagamento nunca processado: payment-service estava parado
+#
+# CAUSA RAIZ:
+#   → Ausência de Saga pattern (Choreography ou Orchestration)
+#   → Cada serviço consome eventos independentemente sem coordenação
+#   → Não existe compensação automática em caso de falha parcial
+#
+# SOLUÇÃO (não implementada — trabalho futuro):
+#   → Saga Choreography: cada falha publica evento compensatório
+#   → Ex: payment-failed → order-service publica order-cancelled-events
+#   → order-cancelled-events → inventory-service restaura stock

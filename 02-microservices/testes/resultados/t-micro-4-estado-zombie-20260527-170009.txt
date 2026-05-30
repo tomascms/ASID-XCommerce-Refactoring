@@ -1,0 +1,29 @@
+=== T-MICRO-4: Estado Zombie ===
+Data: Wed May 27 17:00:09 WEST 2026
+
+Token obtido.
+
+--- Estado ANTES ---
+Stock produto 1: 304
+
+--- Checkout ---
+Order criada: id=139 · status=HANDLING
+
+payment-service (xcommerce-payment-service) parado. O evento Kafka ficou sem consumidor.
+
+Aguardar 10s (PaymentProcessor tem 2s de delay — janela já passou)...
+--- Estado APÓS a falha ---
+Stock produto 1: 302 (era 304 → decremento: 2)
+Status da order 139: HANDLING
+
+--- ANÁLISE ---
+*** ESTADO ZOMBIE CONFIRMADO ***
+  - Stock decrementado: 304 → 302 (−2 unidade)
+  - Order 139 em HANDLING: pagamento nunca processado
+  - Carrinho esvaziado: irreversível
+  - Sem Saga: stock NÃO será reposto automaticamente
+
+payment-service continua PARADO para evidência.
+Para reiniciar: docker start xcommerce-payment-service
+
+=== FIM ===

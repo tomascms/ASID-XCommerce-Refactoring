@@ -1,0 +1,71 @@
+=== T-MICRO-5: Recursos CPU e RAM ===
+Data: Wed May 27 16:30:37 WEST 2026
+Arquitetura: MICROSERVIÇOS
+
+--- Máquina ---
+Apple M4 Pro
+RAM total: 48 GB
+
+--- Containers xcommerce activos ---
+xcommerce-catalog-service           Up 44 minutes (healthy)
+xcommerce-auth-service              Up 51 minutes (healthy)
+xcommerce-user-service              Up 50 minutes (healthy)
+xcommerce-payment-service           Up About an hour (healthy)
+xcommerce-order-service             Up About an hour (healthy)
+xcommerce-gateway                   Up About an hour (healthy)
+xcommerce-api-composition-service   Up About an hour (healthy)
+xcommerce-notification-service      Up About an hour (healthy)
+xcommerce-inventory-service         Up 15 minutes (healthy)
+xcommerce-cart-service              Up About an hour (healthy)
+xcommerce-kafka                     Up About an hour (healthy)
+xcommerce-zookeeper                 Up About an hour
+xcommerce-kafdrop                   Up 2 hours
+xcommerce-grafana                   Up 2 hours
+xcommerce-db                        Up 2 hours (healthy)
+xcommerce-jaeger                    Up 2 hours
+xcommerce-prometheus                Up 2 hours
+
+--- IDLE (sem carga) — aguardar 10s ---
+NAME                                CPU %     MEM USAGE / LIMIT     MEM %
+xcommerce-catalog-service           0.22%     433.7MiB / 23.92GiB   1.77%
+xcommerce-auth-service              0.15%     416MiB / 23.92GiB     1.70%
+xcommerce-user-service              0.23%     401MiB / 23.92GiB     1.64%
+xcommerce-payment-service           0.56%     377.3MiB / 23.92GiB   1.54%
+xcommerce-order-service             0.82%     440.3MiB / 23.92GiB   1.80%
+xcommerce-gateway                   0.08%     431.9MiB / 23.92GiB   1.76%
+xcommerce-api-composition-service   0.17%     305MiB / 23.92GiB     1.25%
+xcommerce-notification-service      1.52%     437.5MiB / 23.92GiB   1.79%
+xcommerce-inventory-service         0.87%     405.8MiB / 23.92GiB   1.66%
+xcommerce-cart-service              0.19%     435.8MiB / 23.92GiB   1.78%
+xcommerce-kafka                     3.20%     993.2MiB / 23.92GiB   4.05%
+xcommerce-zookeeper                 0.13%     125.3MiB / 23.92GiB   0.51%
+xcommerce-kafdrop                   0.16%     400.1MiB / 23.92GiB   1.63%
+xcommerce-grafana                   1.02%     351.6MiB / 23.92GiB   1.44%
+xcommerce-db                        0.21%     185.2MiB / 23.92GiB   0.76%
+xcommerce-jaeger                    0.35%     391.9MiB / 23.92GiB   1.60%
+xcommerce-prometheus                0.10%     150.5MiB / 23.92GiB   0.61%
+
+Total containers xcommerce: 17 (monólito tinha 3)
+
+--- SOB CARGA (k6 T-MICRO-1, 10 VUs, 30s) ---
+k6 em execução (PID 91818) — medindo a meio da carga...
+NAME                                CPU %     MEM USAGE / LIMIT     MEM %
+xcommerce-catalog-service           5.09%     433.8MiB / 23.92GiB   1.77%
+xcommerce-auth-service              0.67%     416MiB / 23.92GiB     1.70%
+xcommerce-user-service              0.73%     401.1MiB / 23.92GiB   1.64%
+xcommerce-payment-service           1.07%     377.3MiB / 23.92GiB   1.54%
+xcommerce-order-service             1.36%     440.3MiB / 23.92GiB   1.80%
+xcommerce-gateway                   7.72%     432.5MiB / 23.92GiB   1.77%
+xcommerce-api-composition-service   3.11%     305.1MiB / 23.92GiB   1.25%
+xcommerce-notification-service      1.30%     437.7MiB / 23.92GiB   1.79%
+xcommerce-inventory-service         3.28%     405.6MiB / 23.92GiB   1.66%
+xcommerce-cart-service              0.81%     435.5MiB / 23.92GiB   1.78%
+xcommerce-kafka                     3.02%     993.3MiB / 23.92GiB   4.05%
+xcommerce-zookeeper                 0.10%     125.3MiB / 23.92GiB   0.51%
+xcommerce-kafdrop                   0.11%     400.1MiB / 23.92GiB   1.63%
+xcommerce-grafana                   0.73%     351.6MiB / 23.92GiB   1.44%
+xcommerce-db                        4.24%     187.5MiB / 23.92GiB   0.77%
+xcommerce-jaeger                    0.34%     391.7MiB / 23.92GiB   1.60%
+xcommerce-prometheus                0.19%     150.5MiB / 23.92GiB   0.61%
+
+=== FIM ===

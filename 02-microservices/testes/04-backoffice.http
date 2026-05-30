@@ -1,0 +1,256 @@
+### XCommerce — Workflow 4: Backoffice Admin (orders, users, inventário)
+### Gateway: http://localhost:9000
+### Compatível com IntelliJ HTTP Client / VS Code REST Client
+###
+### PRÉ-REQUISITO: token admin obtido em 01-auth.http (passo 3a)
+###
+### ESTE WORKFLOW DEMONSTRA:
+###   - Gestão de orders pelo admin (lista global, mudança de status)
+###   - Gestão de utilizadores (criar, listar, promover)
+###   - Operações de inventário (verificar, ajustar, sincronizar stock)
+###   - RBAC: admin vs customer vs superadmin
+###
+### ORDEM DE EXECUÇÃO:
+###   1. Listar e gerir orders (backoffice)
+###   2. Gerir utilizadores (admin)
+###   3. Operações de inventário (admin)
+
+# ─────────────────────────────────────────────────────────
+# VARIÁVEIS
+# ─────────────────────────────────────────────────────────
+@gateway       = http://localhost:9000
+@tokenAdmin    = SUBSTITUIR_PELO_TOKEN_ADMIN
+@tokenCustomer = SUBSTITUIR_PELO_TOKEN_CUSTOMER
+
+# Preencher com IDs reais
+@orderId   = 1
+@userId    = 1
+@productId = 1
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 1 — Gestão de Orders (backoffice)
+# ─────────────────────────────────────────────────────────
+
+### 1a. Listar todas as orders (admin — visão global)
+# Resultado esperado: 200 OK + lista completa de orders de todos os clientes
+GET {{gateway}}/rest/order/backOffice/list
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 1b. Tentar listar todas as orders como customer (deve falhar)
+# Resultado esperado: 403 Forbidden
+GET {{gateway}}/rest/order/backOffice/list
+Authorization: Bearer {{tokenCustomer}}
+
+
+### 1c. Ver detalhes de order específica (admin pode ver qualquer order)
+# Resultado esperado: 200 OK + detalhes completos
+GET {{gateway}}/rest/order/{{orderId}}
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 1d. Actualizar status de order para CONFIRMED (admin)
+# Statuses possíveis: PENDING, CONFIRMED, SHIPPED, DELIVERED, ONHOLD, CANCELLED, HANDLING
+# Resultado esperado: 200 OK + order com novo status
+PATCH {{gateway}}/rest/order/{{orderId}}/status
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "status": "CONFIRMED"
+}
+
+
+### 1e. Actualizar status para SHIPPED
+PATCH {{gateway}}/rest/order/{{orderId}}/status
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "status": "SHIPPED"
+}
+
+
+### 1f. Actualizar status para DELIVERED
+PATCH {{gateway}}/rest/order/{{orderId}}/status
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "status": "DELIVERED"
+}
+
+
+### 1g. Colocar order em ONHOLD
+PATCH {{gateway}}/rest/order/{{orderId}}/status
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "status": "ONHOLD"
+}
+
+
+### 1h. Cancelar order (admin)
+# NOTA: cancelar order CONFIRMED → order-cancelled-events → inventory restaura stock
+PATCH {{gateway}}/rest/order/{{orderId}}/status
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "status": "CANCELLED"
+}
+
+
+### 1i. Tentar mudar status sem ser admin (deve falhar)
+# Resultado esperado: 403 Forbidden
+PATCH {{gateway}}/rest/order/{{orderId}}/status
+Authorization: Bearer {{tokenCustomer}}
+Content-Type: application/json
+
+{
+  "status": "DELIVERED"
+}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 2 — Gestão de Utilizadores (admin)
+# ─────────────────────────────────────────────────────────
+
+### 2a. Listar todos os utilizadores (admin)
+# Resultado esperado: 200 OK + todos os utilizadores do sistema
+GET {{gateway}}/rest/user
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 2b. Endpoint alternativo — backoffice list
+GET {{gateway}}/rest/user/backOffice/list
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 2c. Ver utilizador por ID
+# Resultado esperado: 200 OK + dados do utilizador
+GET {{gateway}}/rest/user/{{userId}}
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 2d. Ver utilizador por username
+GET {{gateway}}/rest/user/by-username/admin
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 2e. Criar utilizador admin (admin pode criar outros admins)
+# Resultado esperado: 201 Created
+POST {{gateway}}/rest/user/admin
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "username": "novo.gestor",
+  "password": "gestor456",
+  "email": "novo.gestor@xcommerce.pt",
+  "firstName": "Novo",
+  "lastName": "Gestor"
+}
+
+
+### 2f. Actualizar dados de utilizador
+# Resultado esperado: 200 OK + utilizador actualizado
+PATCH {{gateway}}/rest/user/{{userId}}
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "email": "email.atualizado@xcommerce.pt",
+  "firstName": "Nome",
+  "lastName": "Atualizado"
+}
+
+
+### 2g. Tentar listar utilizadores como customer (deve falhar)
+# Resultado esperado: 403 Forbidden
+GET {{gateway}}/rest/user
+Authorization: Bearer {{tokenCustomer}}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 3 — Operações de Inventário
+# ─────────────────────────────────────────────────────────
+# NOTA: inventory-service é normalmente chamado internamente
+# via order-service (Kafka). Estes endpoints permitem gestão manual.
+
+### 3a. Verificar stock de produto
+# Resultado esperado: 200 OK + { "available": true, "quantity": N }
+GET {{gateway}}/inventory/check?productId={{productId}}&quantity=1
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 3b. Verificar stock — quantidade elevada (pode retornar available: false)
+GET {{gateway}}/inventory/check?productId={{productId}}&quantity=1000
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 3c. Decrementar stock manualmente (admin — operação directa)
+# Resultado esperado: 200 OK
+# NOTA: normalmente feito automaticamente via Kafka order-placed-events
+POST {{gateway}}/inventory/decrease?productId={{productId}}&quantity=5
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 3d. Sincronizar stock (repor a quantidade)
+# Resultado esperado: 200 OK
+# Útil para corrigir inconsistências ou repor stock após recepção de mercadoria
+POST {{gateway}}/inventory/sync?productId={{productId}}&quantity=100
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 3e. Verificar stock após sincronização
+GET {{gateway}}/inventory/check?productId={{productId}}&quantity=1
+Authorization: Bearer {{tokenAdmin}}
+
+
+# ─────────────────────────────────────────────────────────
+# PASSO 4 — Infraestrutura e Observabilidade
+# ─────────────────────────────────────────────────────────
+# Estes endpoints não passam pelo Gateway — acesso directo
+
+### 4a. Health check do Gateway
+GET http://localhost:9000/actuator/health
+
+
+### 4b. Health check do Auth Service (directo)
+GET http://localhost:8081/actuator/health
+
+
+### 4c. Health check do Catalog Service (directo)
+GET http://localhost:8082/actuator/health
+
+
+### 4d. Health check do Order Service (directo)
+GET http://localhost:8084/actuator/health
+
+
+### 4e. Health check do Inventory Service (directo)
+GET http://localhost:8085/actuator/health
+
+
+### 4f. Health check do Payment Service (directo)
+GET http://localhost:8087/actuator/health
+
+
+### 4g. Métricas Prometheus do Gateway
+# Usado pelo Prometheus para scraping → Grafana dashboards
+GET http://localhost:9000/actuator/prometheus
+Authorization: Bearer {{tokenAdmin}}
+
+
+### 4h. Kafdrop — UI Kafka (ver topics e mensagens)
+# Abrir no browser: http://localhost:9001
+# Topics relevantes:
+#   - order-placed-events
+#   - payment-events
+#   - order-confirmed-events
+#   - order-cancelled-events
+#   - user-events
+#   - product-events
