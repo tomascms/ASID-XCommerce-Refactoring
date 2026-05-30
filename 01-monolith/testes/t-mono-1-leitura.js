@@ -1,14 +1,17 @@
 import http from 'k6/http';
-import { sleep, check } from 'k6';
+import { check } from 'k6';
 
 // T-MONO-1: Latência de leitura simples — GET /rest/catalog/products
-// Monólito em :18088 — 1 query directa à BD, sem lógica de negócio
+// Monólito em :18080 — 1 query directa à BD via Spring Data REST, sem lógica de negócio.
+//
+// Endpoint público (permitAll para GET /rest/catalog/**), sem token necessário.
+// Sem `sleep()` — saturamos a arquitetura para medir overhead sob pressão sustentada.
+// Equivalente ao t-micro-1-leitura.js (também sem sleep) para comparação justa.
 //
 // Uso:
-//   k6 run --out csv=resultados/t-mono-1-exec1.csv -e TOKEN=<jwt> t-mono-1-leitura.js
+//   k6 run --out csv=resultados/t-mono-1-exec1.csv t-mono-1-leitura.js
 
 const BASE_URL = 'http://localhost:18080';
-const TOKEN    = __ENV.TOKEN || '';
 
 export let options = {
   stages: [
@@ -23,9 +26,7 @@ export let options = {
 };
 
 export default function () {
-  const res = http.get(`${BASE_URL}/rest/catalog/products`, {
-    headers: { Authorization: `Bearer ${TOKEN}` },
-  });
+  const res = http.get(`${BASE_URL}/rest/catalog/products`);
 
   check(res, {
     'status 200': (r) => r.status === 200,

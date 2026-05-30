@@ -1,14 +1,14 @@
 services:
   # --- BASES DE DADOS (uma instância PostgreSQL por serviço) ---
-  db-auth:
+  db-identity:
     image: postgres:15-alpine
-    container_name: xcommerce-db-auth
+    container_name: xcommerce-db-identity
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=xcommerce_auth
+      - POSTGRES_DB=xcommerce_identity
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_auth"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_identity"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -70,20 +70,6 @@ services:
       retries: 5
     networks: [xcommerce-network]
 
-  db-users:
-    image: postgres:15-alpine
-    container_name: xcommerce-db-users
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=xcommerce_users
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_users"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks: [xcommerce-network]
-
   db-payment:
     image: postgres:15-alpine
     container_name: xcommerce-db-payment
@@ -107,20 +93,6 @@ services:
       - POSTGRES_DB=xcommerce_notification
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_notification"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks: [xcommerce-network]
-
-  db-keycloak:
-    image: postgres:15-alpine
-    container_name: xcommerce-db-keycloak
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=xcommerce_keycloak
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_keycloak"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -160,33 +132,6 @@ services:
     networks:
       - xcommerce-network
 
-  # --- IDENTITY & ACCESS MANAGEMENT ---
-  keycloak:
-    image: quay.io/keycloak/keycloak:latest
-    container_name: xcommerce-keycloak
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://xcommerce-db-keycloak:5432/xcommerce_keycloak
-      KC_DB_USERNAME: postgres
-      KC_DB_PASSWORD: postgres
-      KC_HOSTNAME: keycloak
-      KC_HOSTNAME_PORT: 8080
-      KC_HOSTNAME_STRICT: "false"
-      KC_PROXY: edge
-    ports: ["8090:8080"]
-    depends_on:
-      db-keycloak: { condition: service_healthy }
-    networks: [xcommerce-network]
-    healthcheck:
-      test: ["CMD-SHELL", "cat < /dev/null > /dev/tcp/localhost/8080"]
-      interval: 20s
-      timeout: 10s
-      retries: 15
-      start_period: 30s
-    command: start-dev
-
   # --- OBSERVABILIDADE ---
   kafdrop:
     image: obsidiandynamics/kafdrop:latest
@@ -218,9 +163,9 @@ services:
     networks: [xcommerce-network]
 
   # --- MICROSERVIÇOS ---
-  auth-service:
-    build: ./auth-service
-    container_name: xcommerce-auth-service
+  identity-service:
+    build: ./identity-service
+    container_name: xcommerce-identity-service
     environment:
       - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
       - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
@@ -230,9 +175,8 @@ services:
       timeout: 5s
       retries: 12
     depends_on:
-      db-auth: { condition: service_healthy }
+      db-identity: { condition: service_healthy }
       kafka: { condition: service_healthy }
-      keycloak: { condition: service_healthy }
     networks: [xcommerce-network]
 
   catalog-service:
@@ -295,22 +239,20 @@ services:
       kafka: { condition: service_healthy }
     networks: [xcommerce-network]
 
-  user-service:
-    build: ./user-service
-    container_name: xcommerce-user-service
+  payment-service:
+    build: ./payment-service
+    container_name: xcommerce-payment-service
     environment:
       - MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://jaeger:4318/v1/traces
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8086/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8087/actuator/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 12
     depends_on:
-      db-users: { condition: service_healthy }
       kafka: { condition: service_healthy }
     networks: [xcommerce-network]
-
-  # payment-service removed from compose (archived). See docs for migration notes.
 
   notification-service:
     build: ./notification-service
@@ -339,15 +281,13 @@ services:
       timeout: 5s
       retries: 12
     depends_on:
-      auth-service: { condition: service_healthy }
+      identity-service: { condition: service_healthy }
       catalog-service: { condition: service_healthy }
       cart-service: { condition: service_healthy }
       order-service: { condition: service_healthy }
       inventory-service: { condition: service_healthy }
-      user-service: { condition: service_healthy }
-      # payment-service removed: no longer required by gateway
+      payment-service: { condition: service_healthy }
       notification-service: { condition: service_healthy }
-      keycloak: { condition: service_healthy }
     networks: [xcommerce-network]
 
 networks:

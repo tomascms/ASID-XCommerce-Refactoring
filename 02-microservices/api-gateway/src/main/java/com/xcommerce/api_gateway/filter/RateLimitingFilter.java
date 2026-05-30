@@ -17,7 +17,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public class RateLimitingFilter implements GlobalFilter, Ordered {
 
-    private static final int MAX_REQUESTS_PER_WINDOW = 120;
+    // Limite alto para acomodar testes de carga sustentada (k6 sem think time
+    // chega a ~3000 req/s por VU). Em produção este valor seria ~120/min por IP
+    // com Bucket4j ou Redis, fora do âmbito deste protótipo.
+    private static final int MAX_REQUESTS_PER_WINDOW = 1_000_000;
     private static final Duration WINDOW = Duration.ofMinutes(1);
 
     private final ConcurrentHashMap<String, WindowState> counters = new ConcurrentHashMap<>();

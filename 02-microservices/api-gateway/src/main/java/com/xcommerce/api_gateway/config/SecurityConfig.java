@@ -1,16 +1,40 @@
 package com.xcommerce.api_gateway.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity.CsrfSpec;
 import org.springframework.security.config.web.server.ServerHttpSecurity.FormLoginSpec;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    /**
+     * JWT decoder HS256 que partilha o segredo com o identity-service.
+     * Ambos assinam/validam tokens com o mesmo {@code jwt.secret}, sem necessidade
+     * de issuer remoto (Keycloak) nem JWKS endpoint. Esta opção mantém o gateway
+     * autocontido e remove a dependência operacional que o Keycloak introduzia.
+     */
+    @Bean
+    public ReactiveJwtDecoder jwtDecoder() {
+        SecretKeySpec key = new SecretKeySpec(jwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        return NimbusReactiveJwtDecoder.withSecretKey(key)
+            .macAlgorithm(MacAlgorithm.HS256)
+            .build();
+    }
 
     @Bean
     SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
@@ -19,6 +43,7 @@ public class SecurityConfig {
                 .pathMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .pathMatchers("/actuator/info", "/actuator/prometheus", "/actuator/metrics", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/docs/**").permitAll()
                 .pathMatchers("/rest/user/authenticate", "/rest/user/login", "/rest/user/register", "/rest/user").permitAll()
+                .pathMatchers(org.springframework.http.HttpMethod.GET, "/products", "/products/**", "/categories", "/categories/**").permitAll()
                 .anyExchange().authenticated())
             .csrf(CsrfSpec::disable)
             .formLogin(FormLoginSpec::disable)
