@@ -1,7 +1,7 @@
 # 04-QI — Testes Experimentais XCommerce
 
 Testes de suporte à Avaliação Experimental (Secção 6 do relatório).
-Cobrem H2a (latência), H2b (recursos) e H3 (falha parcial/consistência).
+Cobrem H2 (latência + recursos) e H3 (falha parcial/consistência).
 
 ---
 
@@ -9,7 +9,6 @@ Cobrem H2a (latência), H2b (recursos) e H3 (falha parcial/consistência).
 
 - Docker Desktop em execução
 - k6 instalado (`brew install k6` ou https://k6.io/docs/get-started/installation/)
-- psql instalado (`brew install libpq`)
 - As duas arquiteturas **não devem correr em simultâneo** (conflito de recursos)
 
 ---
@@ -22,7 +21,7 @@ Popula as BDs com utilizadores, produtos, stock e encomendas de teste.
 ```bash
 # Microserviços
 cd 02-microservices && docker compose up -d
-# aguardar ~2 min
+# aguardar ~2 min até todos healthy
 bash 04-QI/seed/seed-microservicos.sh
 
 # Monolito
@@ -31,71 +30,50 @@ cd 01-monolith && docker compose up -d
 bash 04-QI/seed/seed-monolito.sh
 ```
 
-O que é criado em cada BD:
+O que é criado:
 
-| BD | Dados |
-|----|-------|
-| xcommerce_identity | 50 utilizadores `user1`..`user50`, password = `password` |
-| xcommerce_catalog | 1 categoria + 1 marca + 20 produtos `Produto Teste 1..20` |
-| xcommerce_inventory | stock 1000 unidades para os 20 produtos |
-| xcommerce_orders | 250 encomendas CONFIRMED (5 × 50 utilizadores), 4 itens cada |
-| monolito (xcommerce) | idem — utilizadores, produtos, stock, encomendas |
+| BD / Sistema | Dados |
+|---|---|
+| xcommerce_identity (micro) | 50 utilizadores `user1`..`user50`, password = `password` |
+| xcommerce_catalog (micro) | 1 categoria + 1 marca + 20 produtos `Produto Teste 1..20` |
+| xcommerce_inventory (micro) | stock 1000 unidades para os 20 produtos |
+| xcommerce_orders (micro) | 250 encomendas CONFIRMED (5 × 50 utilizadores), 4 itens cada |
+| xcommerce / monolito | idem — utilizadores, produtos (id 2601-2620), stock, encomendas |
 
-O seed é **idempotente**: pode ser re-executado sem erros (apaga e recria os dados de teste).
+O seed é **idempotente**: pode ser re-executado sem erros.
 
 ---
 
-## Passo 2 — H2a: Latência sob carga
+## Passo 2 — H2: Latência sob carga (k6)
 
-Três cenários × três níveis de carga × duas arquiteturas = 54 corridas.
-Duração total estimada: ~4h (corridas de 3 min cada, automatizadas).
+Dois cenários × duas arquiteturas.  
+Carga: 10 VUs fixos, 3 min, 2 runs por cenário.
 
 ```bash
-# Monolito (com monolito a correr + seed feito)
-./04-QI/monolitico/h2a/correr-h2a.sh
+# Microserviços (com microserviços a correr + seed feito)
+bash 04-QI/microserviços/h2/correr-h2a.sh
 
-# Microserviços (depois de fazer docker compose down no monolito)
-docker compose -f 01-monolith/docker-compose.yml down
-docker compose -f 02-microservices/docker-compose.yml up -d
-./04-QI/microserviços/h2a/correr-h2a.sh
+# Monolito (depois de fazer down nos microserviços)
+docker compose -f 02-microservices/docker-compose.yml down
+cd 01-monolith && docker compose up -d
+bash 04-QI/seed/seed-monolito.sh
+bash 04-QI/monolitico/h2/correr-h2a.sh
 ```
 
 Resultados em:
-- `monolitico/h2a/resultados/*.json`
-- `microserviços/h2a/resultados/*.json`
+- `monolitico/h2/resultados/*.json`
+- `microserviços/h2/resultados/*.json`
 
 ### Cenários
 
-| ID | Endpoint | Hops mono | Hops micro | Hipótese |
-|----|----------|-----------|------------|----------|
-| T1 | GET /products | 1 | 1 (gateway→catalog) | baseline |
-| T2 | GET /rest/order/list | 1 (3+2N queries) | 1 (só IDs) | W2 / N+1 |
-| T3 | POST /rest/order/checkout | 1 (transação JPA) | 5 + Kafka | H2a central |
+| ID | Endpoint Micro | Endpoint Mono | Descrição |
+|----|---------------|--------------|-----------|
+| T1 | GET /products | GET /rest/shoppingCart/get | leitura leve (baseline) |
+| T3 | POST /rest/order/checkout | GET /rest/order/checkout | checkout transacional |
 
 ---
 
-## Passo 3 — H2b: Recursos em idle
-
-Não precisa de seed. Mede RAM e CPU com os serviços em repouso.
-
-```bash
-# Monolito — arrancar, esperar 5 min, capturar
-docker compose -f 01-monolith/docker-compose.yml up -d
-sleep 300
-./04-QI/monolitico/h2b/capturar-h2b.sh mono 1
-
-# Microserviços — idem
-docker compose -f 01-monolith/docker-compose.yml down
-docker compose -f 02-microservices/docker-compose.yml up -d
-sleep 300
-./04-QI/microserviços/h2b/capturar-h2b.sh micro 1
-```
-
-Repetir 3 vezes (run 1, 2, 3) e usar a mediana. Resultados em `*/h2b/resultados/*.csv`.
-
----
-
-## Passo 4 — H3: Falha parcial e consistência
+## Passo 3 — H3: Falha parcial e consistência
 
 ### Cenário A — Estado zombie (microserviços)
 
@@ -103,10 +81,10 @@ Demonstra que sem Saga, a encomenda fica em `HANDLING` quando o inventory-servic
 
 ```bash
 # Microserviços a correr + seed feito
-./04-QI/microserviços/h3/cenario-zombie.sh
+bash 04-QI/microserviços/h3/cenario-zombie.sh
 ```
 
-Evidências geradas em `microserviços/h3/resultados/`:
+Evidências em `microserviços/h3/resultados/`:
 - `zombie-orders.txt` — encomenda em HANDLING
 - `zombie-inventory-antes.txt` / `zombie-inventory-depois.txt` — stock inalterado
 - `zombie-kafka-lag.txt` — lag = 1, 0 consumers ativos
@@ -120,7 +98,7 @@ Demonstra que a transação JPA faz rollback completo quando a BD falha a meio.
 
 ```bash
 # Monolito a correr + seed feito
-./04-QI/monolitico/h3/cenario-rollback-mono.sh
+bash 04-QI/monolitico/h3/cenario-rollback-mono.sh
 ```
 
 Evidências em `monolitico/h3/resultados/`:
@@ -130,13 +108,24 @@ Evidências em `monolitico/h3/resultados/`:
 
 ---
 
-## Passo 5 — Análise e tabelas
+## Passo 4 — H4: Recursos em idle
 
-Preencher com os resultados obtidos:
+Não precisa de seed. Mede RAM e CPU com os serviços em repouso.
 
-- `analise/h2a.md` — tabela p50/p95/p99 por cenário, carga e arquitetura
-- `analise/h2b.md` — tabela RAM/CPU idle por contentor e total
-- `analise/h3.md` — tabela estado observado vs esperado (confirma H3)
+```bash
+# Microserviços — arrancar, esperar 5 min, capturar
+docker compose -f 02-microservices/docker-compose.yml up -d
+sleep 300
+bash 04-QI/microserviços/h4/capturar-h2b.sh micro 1
+
+# Monolito — idem
+docker compose -f 02-microservices/docker-compose.yml down
+cd 01-monolith && docker compose up -d
+sleep 300
+bash 04-QI/monolitico/h4/capturar-h2b.sh mono 1
+```
+
+Repetir 3 vezes (run 1, 2, 3) e usar a mediana. Resultados em `*/h4/resultados/*.csv`.
 
 ---
 
@@ -147,13 +136,14 @@ Preencher com os resultados obtidos:
 ├── seed/
 │   ├── seed-monolito.sh          passo 1 para o monolito
 │   └── seed-microservicos.sh     passo 1 para os microserviços
-├── analise/                      tabelas e interpretação (preencher após testes)
 ├── monolitico/
-│   ├── h2a/   t1-catalogo.js, t2-encomendas.js, t3-checkout.js, correr-h2a.sh
-│   ├── h2b/   capturar-h2b.sh
-│   └── h3/    cenario-rollback-mono.sh
+│   ├── h1/   analise-dependencias.sh + resultados/
+│   ├── h2/   t1-catalogo.js, t3-checkout.js, correr-h2a.sh + resultados/
+│   ├── h3/   cenario-rollback-mono.sh + resultados/
+│   └── h4/   capturar-h2b.sh + resultados/
 └── microserviços/
-    ├── h2a/   t1-catalogo.js, t2-encomendas.js, t3-checkout.js, correr-h2a.sh
-    ├── h2b/   capturar-h2b.sh
-    └── h3/    cenario-zombie.sh
+    ├── h1/   analise-dependencias.sh + resultados/
+    ├── h2/   t1-catalogo.js, t3-checkout.js, correr-h2a.sh
+    ├── h3/   cenario-zombie.sh
+    └── h4/   capturar-h2b.sh
 ```

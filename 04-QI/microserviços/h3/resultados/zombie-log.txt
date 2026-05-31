@@ -1,0 +1,10 @@
+=== H3 Cenário Zombie — Sun May 31 22:43:28 WEST 2026 ===
+xcommerce-inventory-service — Up 3 minutes (healthy)
+Token obtido: eyJhbGciOiJIUzI1NiIsInR5cCI6Ik...
+Carrinho reposto com produtos: 101 102
+(não foi possível ligar à BD de inventário)
+inventory-service PARADO
+HTTP: 202
+Resposta: {"id":1003,"username":"user1","productId":101,"quantity":4,"orderDate":"2026-05-31T21:43:31.150587213","totalAmount":46.0,"status":"HANDLING","items":[{"productId":101,"quantity":2,"price":11.0},{"productId":102,"quantity":2,"price":12.0}]}
+(não foi possível ligar à BD de inventário)
+(não foi possível consultar Kafka consumer groups)

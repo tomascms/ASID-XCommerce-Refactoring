@@ -13,9 +13,10 @@ const VUS        = parseInt(__ENV.VUS        || '10');
 const SEED_PASS  = __ENV.SEED_PASS           || 'password';
 // IDs dos produtos no catalog-service — obtidos após seed-microservicos.sh
 // Sobrepor via: -e PRODUCT_ID1=X -e PRODUCT_ID2=Y
+// IDs fixos gerados pelo seed-microservicos.sh: Produto Teste 1=101, Produto Teste 2=102
 const PRODUCT_IDS = [
-  parseInt(__ENV.PRODUCT_ID1 || '1'),
-  parseInt(__ENV.PRODUCT_ID2 || '2'),
+  parseInt(__ENV.PRODUCT_ID1 || '101'),
+  parseInt(__ENV.PRODUCT_ID2 || '102'),
 ];
 
 export const options = {

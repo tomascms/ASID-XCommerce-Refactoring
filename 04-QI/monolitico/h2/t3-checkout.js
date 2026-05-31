@@ -11,8 +11,12 @@ import { login, authHeaders, BASE } from './lib-auth.js';
 
 const VUS        = parseInt(__ENV.VUS  || '10');
 const SEED_PASS  = __ENV.SEED_PASS  || 'password';
-// IDs dos produtos a usar no seed do carrinho (ajustar após popular a BD)
-const PRODUCT_IDS = [2624, 2625];
+// IDs gerados pelo seed-monolito.sh: Produto Teste 1=2601, Produto Teste 2=2602
+// Sobrepor via: -e PRODUCT_ID1=X -e PRODUCT_ID2=Y
+const PRODUCT_IDS = [
+  parseInt(__ENV.PRODUCT_ID1 || '2601'),
+  parseInt(__ENV.PRODUCT_ID2 || '2602'),
+];
 
 export const options = {
   scenarios: {

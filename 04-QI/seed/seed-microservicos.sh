@@ -64,26 +64,28 @@ DELETE FROM brands WHERE name = 'Marca Teste';
 DELETE FROM categories WHERE name = 'Categoria Teste';
 INSERT INTO categories (name) VALUES ('Categoria Teste') ON CONFLICT (name) DO NOTHING;
 INSERT INTO brands (name) VALUES ('Marca Teste') ON CONFLICT (name) DO NOTHING;
-INSERT INTO products (name, description, price, status, category_id, brand_id)
+INSERT INTO products (id, name, description, price, status, category_id, brand_id)
 SELECT
+  100 + i,
   'Produto Teste ' || i, 'Descrição produto ' || i, (10 + i)::numeric, 'ACTIVE',
   (SELECT id FROM categories WHERE name = 'Categoria Teste'),
   (SELECT id FROM brands WHERE name = 'Marca Teste')
-FROM generate_series(1, 20) AS i;
+FROM generate_series(1, 20) AS i
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name, price = EXCLUDED.price, status = EXCLUDED.status;
 SELECT count(*) AS produtos FROM products WHERE name LIKE 'Produto Teste%';
 SQL
 
 # -----------------------------------------------------------------------
-# 3. inventory — stock 1000 para produtos 1..20
+# 3. inventory — stock 1000 para os produtos 101..120 (IDs fixos do seed)
 # -----------------------------------------------------------------------
 echo ""
 echo "3/5 inventory — a criar stock..."
 psql_exec "$DB_INVENTORY" "xcommerce_inventory" <<'SQL'
-DELETE FROM inventory WHERE product_id IN (SELECT generate_series(1, 20));
+DELETE FROM inventory WHERE product_id BETWEEN 101 AND 120;
 INSERT INTO inventory (product_id, quantity)
-SELECT i, 1000 FROM generate_series(1, 20) AS i
-ON CONFLICT DO NOTHING;
-SELECT count(*) AS entradas FROM inventory;
+SELECT 100 + i, 1000 FROM generate_series(1, 20) AS i;
+SELECT count(*) AS entradas FROM inventory WHERE product_id BETWEEN 101 AND 120;
 SQL
 
 # -----------------------------------------------------------------------
@@ -115,7 +117,7 @@ FROM generate_series(1, 50) AS u,
 INSERT INTO order_item (price, product_id, quantity)
 SELECT 10.00, p.pid, 1
 FROM orders o
-JOIN (VALUES (1),(2),(3),(4)) AS p(pid) ON true
+JOIN (VALUES (101),(102),(103),(104)) AS p(pid) ON true
 WHERE o.username LIKE 'user%';
 
 INSERT INTO orders_items (order_id, items_id)
@@ -132,10 +134,11 @@ SQL
 # Resumo
 # -----------------------------------------------------------------------
 echo ""
-echo "=== IDs dos primeiros 4 produtos (usar em PRODUCT_IDS nos scripts k6) ==="
+echo "=== IDs dos primeiros 4 produtos (IDs fixos: 101, 102, 103, 104) ==="
 psql_exec "$DB_CATALOG" "xcommerce_catalog" <<'SQL'
-SELECT id, name, price FROM products WHERE name LIKE 'Produto Teste%' ORDER BY id LIMIT 4;
+SELECT id, name, price FROM products WHERE id BETWEEN 101 AND 104 ORDER BY id;
 SQL
 
 echo ""
 echo "Seed microserviços concluído."
+echo "PRODUCT_ID1=101 PRODUCT_ID2=102 (usar nos scripts k6 de microserviços)"

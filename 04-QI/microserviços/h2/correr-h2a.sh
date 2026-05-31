@@ -13,10 +13,10 @@ mkdir -p "$OUT"
 
 SEED_USER="${SEED_USER:-user1}"
 SEED_PASS="${SEED_PASS:-password}"
-# IDs dos produtos no catalog-service (obtidos após seed-microservicos.sh)
+# IDs fixos gerados pelo seed-microservicos.sh (Produto Teste 1=101, Produto Teste 2=102)
 # Sobrepor se necessário: PRODUCT_ID1=X PRODUCT_ID2=Y ./correr-h2a.sh
-PRODUCT_ID1="${PRODUCT_ID1:-1}"
-PRODUCT_ID2="${PRODUCT_ID2:-2}"
+PRODUCT_ID1="${PRODUCT_ID1:-101}"
+PRODUCT_ID2="${PRODUCT_ID2:-102}"
 
 SCENARIOS=(t1-catalogo t3-checkout)
 VUS=10

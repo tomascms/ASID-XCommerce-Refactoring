@@ -12,7 +12,8 @@ DB_ORDERS_PASS=postgres
 
 USER="user1"
 PASS="password"
-PRODUCT_IDS=(1 2)
+# IDs fixos gerados pelo seed-microservicos.sh (Produto Teste 1=101, Produto Teste 2=102)
+PRODUCT_IDS=(101 102)
 
 OUT_DIR="$(cd "$(dirname "$0")" && pwd)/resultados"
 mkdir -p "$OUT_DIR"
@@ -108,7 +109,7 @@ docker exec -e PGPASSWORD="$DB_ORDERS_PASS" xcommerce-db-cart \
 # Lag do tópico Kafka
 echo ""
 echo "Lag do consumer group inventory-group:"
-docker exec kafka kafka-consumer-groups.sh \
+docker exec xcommerce-kafka kafka-consumer-groups.sh \
   --bootstrap-server localhost:9092 \
   --describe --group inventory-group \
   2>/dev/null | tee "$OUT_DIR/zombie-kafka-lag.txt" || \
