@@ -1,0 +1,56 @@
+### XCommerce Monolito — Carrinho de Compras
+### Base URL: http://localhost:18080
+### Todos os endpoints requerem JWT
+###
+### Credenciais: root/root (SUPERADMIN) ou user1/password (USER, requer seed)
+### Token: obtido em auth.http → POST /rest/user/authenticate
+
+@baseUrl = http://localhost:18080
+@token = eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJyb290IiwiaWF0IjoxNzgwMjY0NjczLCJleHAiOjE3ODAzNTEwNzMsInJvbGVzIjpbIlJPTEVfU1VQRVJBRE1JTiJdfQ.JkXsvhOmpf3DxdKIuVFLArRCP1axF56vVc3uMmNS6h8nNdw1rv60rFcJH9Adq-sB-W3AuBNLOpwro67cJF6m5A
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/shoppingCart/get  →  ver carrinho atual
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/shoppingCart/get
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# PATCH /rest/shoppingCart/addProduct  →  adicionar produto
+# ─────────────────────────────────────────────────────────
+PATCH {{baseUrl}}/rest/shoppingCart/addProduct
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "id": 1,
+  "quantity": 2
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# PATCH /rest/shoppingCart/decreaseProductQuantity  →  diminuir quantidade
+# ─────────────────────────────────────────────────────────
+PATCH {{baseUrl}}/rest/shoppingCart/decreaseProductQuantity
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "id": 1,
+  "quantity": 1
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# PATCH /rest/shoppingCart/removeProduct  →  remover produto do carrinho
+# ─────────────────────────────────────────────────────────
+PATCH {{baseUrl}}/rest/shoppingCart/removeProduct
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "id": 1
+}

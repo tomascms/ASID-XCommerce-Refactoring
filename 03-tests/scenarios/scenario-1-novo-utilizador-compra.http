@@ -1,0 +1,127 @@
+### CENÁRIO 1 — Utilizador Novo: Registo → Explorar Catálogo → Compra Completa
+###
+### Simula um utilizador que descobre a loja, explora produtos,
+### adiciona ao carrinho e finaliza a sua primeira compra.
+###
+### Executar os requests NA ORDEM indicada (1→2→3→...)
+### Gateway: http://localhost:9000
+###
+### IDs reais dos produtos no catálogo: começam em 101
+### POST /products/{id}/reviews requer role ADMIN — ver PASSO 12
+
+@baseUrl = http://localhost:9000
+
+# ─── PASSO 1: Registar nova conta ──────────────────────────
+# @name registerUser
+POST {{baseUrl}}/rest/user/register
+Content-Type: application/json
+
+{
+  "username": "ana.ferreira",
+  "email": "ana.ferreira@example.com",
+  "password": "segura1234",
+  "firstName": "Ana",
+  "lastName": "Ferreira",
+  "address": "Rua do Comércio 7, Lisboa"
+}
+
+###
+
+# ─── PASSO 2: Fazer login com a conta criada ───────────────
+# @name loginUser
+POST {{baseUrl}}/rest/user/login
+Content-Type: application/json
+
+{
+  "username": "ana.ferreira",
+  "password": "segura1234"
+}
+
+# Guardar o token retornado para usar nos passos seguintes
+@token = SEU_TOKEN_AQUI
+
+###
+
+# ─── PASSO 3: Explorar o catálogo ──────────────────────────
+GET {{baseUrl}}/products
+
+###
+
+# ─── PASSO 4: Pesquisar produto específico ─────────────────
+GET {{baseUrl}}/products/search?name=Produto&maxPrice=50
+
+###
+
+# ─── PASSO 5: Ver detalhe do produto escolhido ─────────────
+# IDs dos produtos começam em 101 (seed-microservicos.sh)
+GET {{baseUrl}}/products/101
+
+###
+
+# ─── PASSO 6: Ver reviews antes de comprar ─────────────────
+GET {{baseUrl}}/products/101/reviews
+
+###
+
+# ─── PASSO 7: Verificar stock disponível ───────────────────
+GET {{baseUrl}}/inventory/check?productId=101&quantity=1
+
+###
+
+# ─── PASSO 8: Adicionar ao carrinho ────────────────────────
+POST {{baseUrl}}/rest/shoppingCart/add
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 101,
+  "quantity": 1
+}
+
+###
+
+# ─── PASSO 9: Ver carrinho antes de pagar ──────────────────
+GET {{baseUrl}}/rest/shoppingCart/get
+Authorization: Bearer {{token}}
+
+###
+
+# ─── PASSO 10: Finalizar compra (checkout) ─────────────────
+# Requer carrinho não vazio (PASSO 8 executado primeiro)
+POST {{baseUrl}}/rest/order/checkout
+Authorization: Bearer {{token}}
+
+###
+
+# ─── PASSO 11: Confirmar que a encomenda foi criada ────────
+GET {{baseUrl}}/rest/order/list
+Authorization: Bearer {{token}}
+
+###
+
+# ─── PASSO 12: Deixar review do produto comprado ───────────
+# NOTA: POST /products/** requer role ADMIN ou SUPERADMIN (AuthenticationFilter)
+# Usar token de admin para deixar a review
+# @name loginAdmin
+POST {{baseUrl}}/rest/user/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+###
+
+# Substituir pelo token do admin devolvido no passo anterior
+@adminToken = SEU_ADMIN_TOKEN_AQUI
+
+POST {{baseUrl}}/products/101/reviews
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "rating": 5,
+  "comment": "Chegou rápido e em perfeitas condições. Muito satisfeito!",
+  "username": "ana.ferreira"
+}

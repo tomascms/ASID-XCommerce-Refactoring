@@ -1,0 +1,84 @@
+### XCommerce Microserviços — Encomendas
+### Todos os requests passam pelo API Gateway: http://localhost:9000
+### Requerem JWT; backOffice requer role ADMIN+
+
+@baseUrl = http://localhost:9000
+@token = SEU_TOKEN_AQUI
+
+# ─────────────────────────────────────────────────────────
+# POST /rest/order/checkout  →  fazer checkout (cria encomenda do carrinho)
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/rest/order/checkout
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/order/checkout  →  checkout via GET (alias)
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/order/checkout
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/order/list  →  listar encomendas do utilizador autenticado
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/order/list
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/order/{id}  →  detalhe de uma encomenda
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/order/1
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST /rest/order  →  criar encomenda manualmente
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/rest/order
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "items": [
+    { "productId": 101, "quantity": 2 },
+    { "productId": 103, "quantity": 1 }
+  ]
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/order/backOffice/list  →  listar encomendas (admin)
+# Parâmetros opcionais: customerId, username
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/order/backOffice/list
+Authorization: Bearer {{token}}
+
+###
+
+GET {{baseUrl}}/rest/order/backOffice/list?username=joao.silva
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# PATCH /rest/order/{id}/status  →  atualizar estado (admin)
+# Status values: HANDLING, SHIPPED, DELIVERED, ONHOLD, CANCELED, CONFIRMED
+# ─────────────────────────────────────────────────────────
+PATCH {{baseUrl}}/rest/order/1/status?status=SHIPPED
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/order/backOffice/updateStatus  →  atualizar estado via GET (legado)
+# newStatus: 1=SHIPPED  2=DELIVERED  3=ONHOLD  4=CANCELED
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/order/backOffice/updateStatus?orderId=1&newStatus=2
+Authorization: Bearer {{token}}

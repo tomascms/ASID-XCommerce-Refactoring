@@ -1,0 +1,45 @@
+### XCommerce Monolito — Encomendas
+### Base URL: http://localhost:18080
+###
+### Credenciais: root/root (SUPERADMIN) ou user1/password (USER, requer seed)
+### Token: obtido em auth.http → POST /rest/user/authenticate
+###
+### NOTA: para ter encomendas é preciso seed + checkout.
+###   1. bash 04-QI/seed/seed-monolito.sh
+###   2. Autenticar como user1/password e fazer checkout do carrinho
+
+@baseUrl = http://localhost:18080
+@token = SEU_TOKEN_AQUI
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/order/list  →  listar encomendas do utilizador autenticado
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/order/list
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/order/checkout  →  fazer checkout do carrinho atual
+# Requer carrinho não vazio — adicionar produto primeiro em shopping-cart.http
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/order/checkout
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/order/backOffice/list  →  listar encomendas de um cliente (admin)
+# customerId = ID do utilizador na tabela user (root=0, user1=1001, ...)
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/order/backOffice/list?customerId=1001
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/order/backOffice/updateStatus  →  atualizar estado da encomenda
+# Status: 1=SHIPPED  2=DELIVERED  3=ONHOLD  4=CANCELED
+# orderId: usar ID real de uma encomenda existente (ver backOffice/list acima)
+# Requer seed: bash 04-QI/seed/seed-monolito.sh → IDs começam em 3000
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/order/backOffice/updateStatus?orderId=3000&newStatus=2

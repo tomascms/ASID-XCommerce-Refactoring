@@ -1,0 +1,177 @@
+### XCommerce Microserviços — Catálogo (Produtos & Categorias)
+### Todos os requests passam pelo API Gateway: http://localhost:9000
+### Endpoints de catálogo são PUBLIC (GET) — não precisam de JWT
+
+@baseUrl = http://localhost:9000
+@token = SEU_TOKEN_AQUI
+
+# ═══════════════════════════════════════════════════════════
+# PRODUTOS
+# ═══════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────
+# GET /products  →  listar todos os produtos
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/products
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /products/{id}  →  detalhe de produto
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/products/101
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /products/search  →  pesquisa avançada
+# Parâmetros opcionais: name, category, categoryId, brand, brandId, minPrice, maxPrice
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/products/search?name=laptop&minPrice=500&maxPrice=2000
+
+###
+
+GET {{baseUrl}}/products/search?category=Electronics
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /products/{id}/price  →  preço de um produto
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/products/101/price
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /products/{id}/reviews  →  reviews de um produto
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/products/101/reviews
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST /products  →  criar produto
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Laptop XCommerce Pro 15",
+  "sku": "LPT-XC-PRO-15",
+  "barcode": "1234567890123",
+  "description": "Laptop de alto desempenho para profissionais",
+  "image": "https://images.xcommerce.com/laptop-pro-15.jpg",
+  "price": 1299.99,
+  "discount": 0.10,
+  "quantity": 50,
+  "weight": 1.8,
+  "active": true,
+  "brandId": 1,
+  "brand": "XCommerce",
+  "categoryId": 1,
+  "category": "Electronics"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST /products/{id}/reviews  →  adicionar review
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/products/101/reviews
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "rating": 5,
+  "comment": "Excelente produto! Superou as minhas expectativas.",
+  "username": "joao.silva"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# PUT /products/{id}  →  atualizar produto
+# ─────────────────────────────────────────────────────────
+PUT {{baseUrl}}/products/101
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Laptop XCommerce Pro 15 v2",
+  "price": 1199.99,
+  "discount": 0.15,
+  "quantity": 45,
+  "active": true
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# DELETE /products/{id}  →  eliminar produto
+# ─────────────────────────────────────────────────────────
+DELETE {{baseUrl}}/products/101
+Authorization: Bearer {{token}}
+
+###
+
+# ═══════════════════════════════════════════════════════════
+# CATEGORIAS
+# ═══════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────
+# GET /categories  →  listar todas as categorias
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/categories
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST /categories  →  criar categoria
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Electronics",
+  "parentCategoryId": null,
+  "active": true
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST /categories  →  criar sub-categoria
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Laptops",
+  "parentCategoryId": 1,
+  "active": true
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# PUT /categories/{id}  →  atualizar categoria
+# ─────────────────────────────────────────────────────────
+PUT {{baseUrl}}/categories/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Electronics & Tech",
+  "active": true
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# PATCH /categories/{id}/deactivate  →  desativar categoria
+# ─────────────────────────────────────────────────────────
+PATCH {{baseUrl}}/categories/2/deactivate
+Authorization: Bearer {{token}}

@@ -1,0 +1,138 @@
+### CENÁRIO 3 — Administrador: Gestão Backoffice Completa
+###
+### Simula um administrador a gerir a loja:
+### criar produtos, ver encomendas pendentes e atualizar estados.
+### Demonstra o fluxo operacional do lado do negócio.
+###
+### Executar os requests NA ORDEM indicada (1→2→3→...)
+### Gateway: http://localhost:9000
+
+@baseUrl = http://localhost:9000
+
+# ─── PASSO 1: Login como administrador ─────────────────────
+# @name loginAdmin
+POST {{baseUrl}}/rest/user/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+# Guardar o token da resposta
+@token = SEU_TOKEN_AQUI
+
+###
+
+# ─── PASSO 2: Ver todos os utilizadores registados ─────────
+GET {{baseUrl}}/rest/user
+Authorization: Bearer {{token}}
+
+###
+
+# ─── PASSO 3: Criar nova categoria de produtos ─────────────
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Acessórios",
+  "parentCategoryId": null,
+  "active": true
+}
+
+###
+
+# ─── PASSO 4: Criar sub-categoria ──────────────────────────
+POST {{baseUrl}}/categories
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Capas & Proteções",
+  "parentCategoryId": 1,
+  "active": true
+}
+
+###
+
+# ─── PASSO 5: Adicionar novo produto ao catálogo ───────────
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Capa Protetora Laptop 15\"",
+  "sku": "CAP-LPT-15-BLK",
+  "barcode": "9876543210987",
+  "description": "Capa em neoprene para portáteis até 15 polegadas",
+  "price": 24.99,
+  "discount": 0.0,
+  "quantity": 200,
+  "weight": 0.3,
+  "active": true,
+  "categoryId": 2,
+  "category": "Capas & Proteções"
+}
+
+###
+
+# ─── PASSO 6: Sincronizar stock do novo produto ─────────────
+POST {{baseUrl}}/inventory/sync?productId=102&quantity=200
+
+###
+
+# ─── PASSO 7: Ver todas as encomendas pendentes ────────────
+GET {{baseUrl}}/rest/order/backOffice/list
+Authorization: Bearer {{token}}
+
+###
+
+# ─── PASSO 8: Ver encomendas de um cliente específico ──────
+GET {{baseUrl}}/rest/order/backOffice/list?username=ana.ferreira
+Authorization: Bearer {{token}}
+
+###
+
+# ─── PASSO 9: Processar encomenda — mudar para SHIPPED ─────
+PATCH {{baseUrl}}/rest/order/1/status?status=SHIPPED
+Authorization: Bearer {{token}}
+
+###
+
+# ─── PASSO 10: Confirmar estado atualizado ─────────────────
+GET {{baseUrl}}/rest/order/1
+Authorization: Bearer {{token}}
+
+###
+
+# ─── PASSO 11: Marcar como entregue após confirmação ───────
+PATCH {{baseUrl}}/rest/order/1/status?status=DELIVERED
+Authorization: Bearer {{token}}
+
+###
+
+# ─── PASSO 12: Enviar notificação manual ao cliente ────────
+POST {{baseUrl}}/notifications/send
+Content-Type: application/json
+
+{
+  "email": "ana.ferreira@example.com",
+  "message": "Olá Ana! A sua encomenda foi entregue com sucesso. Esperamos que goste dos seus produtos. Obrigado por escolher a XCommerce!"
+}
+
+###
+
+# ─── PASSO 13: Criar admin secundário ──────────────────────
+POST {{baseUrl}}/rest/user/admin
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "username": "operador.loja",
+  "email": "operador@xcommerce.com",
+  "password": "op3rador2025",
+  "firstName": "Bruno",
+  "lastName": "Operador",
+  "address": "Armazém XCommerce, Setúbal"
+}

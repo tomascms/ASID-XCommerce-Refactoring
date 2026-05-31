@@ -1,0 +1,97 @@
+### XCommerce Microserviços — Carrinho de Compras
+### Todos os requests passam pelo API Gateway: http://localhost:9000
+### Todos os endpoints requerem JWT (gateway injeta X-User-Name)
+
+@baseUrl = http://localhost:9000
+@token = SEU_TOKEN_AQUI
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/shoppingCart/get  →  ver carrinho atual
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/shoppingCart/get
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/shoppingCart  →  listar itens do carrinho
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/shoppingCart
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST /rest/shoppingCart/add  →  adicionar produto ao carrinho
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/rest/shoppingCart/add
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 101,
+  "quantity": 2
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST /rest/shoppingCart  →  adicionar produto (alias)
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/rest/shoppingCart
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 102,
+  "quantity": 1
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# PATCH /rest/shoppingCart/addProduct  →  incrementar quantidade
+# ─────────────────────────────────────────────────────────
+PATCH {{baseUrl}}/rest/shoppingCart/addProduct
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 101,
+  "quantity": 1
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# PATCH /rest/shoppingCart/decreaseProductQuantity  →  diminuir quantidade
+# ─────────────────────────────────────────────────────────
+PATCH {{baseUrl}}/rest/shoppingCart/decreaseProductQuantity
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 101,
+  "quantity": 1
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# PATCH /rest/shoppingCart/removeProduct  →  remover produto
+# ─────────────────────────────────────────────────────────
+PATCH {{baseUrl}}/rest/shoppingCart/removeProduct
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 102
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# DELETE /rest/shoppingCart  →  limpar carrinho completo
+# ─────────────────────────────────────────────────────────
+DELETE {{baseUrl}}/rest/shoppingCart
+Authorization: Bearer {{token}}

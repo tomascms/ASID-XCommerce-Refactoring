@@ -1,0 +1,124 @@
+### XCommerce Microserviços — Autenticação & Utilizadores
+### Todos os requests passam pelo API Gateway: http://localhost:9000
+### JWT HS256 — Secret: xcommerce-secret-key-please-rotate-in-production
+
+@baseUrl = http://localhost:9000
+@token = {{login.response.body.$.token}}
+
+# ─────────────────────────────────────────────────────────
+# POST /rest/user/login  →  autenticar utilizador (novo endpoint v2)
+# ─────────────────────────────────────────────────────────
+# @name login
+POST {{baseUrl}}/rest/user/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST /rest/user/authenticate  →  autenticar (alias compatibilidade)
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/rest/user/authenticate
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST /rest/user/register  →  registar novo utilizador
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/rest/user/register
+Content-Type: application/json
+
+{
+  "username": "joao.silva",
+  "email": "joao.silva@example.com",
+  "password": "pass1234",
+  "firstName": "João",
+  "lastName": "Silva",
+  "address": "Rua das Flores 10, Lisboa"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST /rest/user  →  criar utilizador comum
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/rest/user
+Content-Type: application/json
+
+{
+  "username": "maria.costa",
+  "email": "maria.costa@example.com",
+  "password": "pass5678",
+  "firstName": "Maria",
+  "lastName": "Costa",
+  "address": "Av. Central 25, Braga"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST /rest/user/admin  →  criar administrador (requer ADMIN+)
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/rest/user/admin
+Content-Type: application/json
+Authorization: Bearer {{token}}
+X-User-Role: ADMIN
+
+{
+  "username": "novo.admin",
+  "email": "novo.admin@xcommerce.com",
+  "password": "adminpass",
+  "firstName": "Carlos",
+  "lastName": "Admin",
+  "address": "Sede XCommerce"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/user  →  listar todos os utilizadores (requer ADMIN+)
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/user
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/user/{id}  →  obter utilizador por ID
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/user/1
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# GET /rest/user/by-username/{username}  →  obter utilizador por username
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/rest/user/by-username/admin
+Authorization: Bearer {{token}}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# PATCH /rest/user/{userId}  →  atualizar perfil
+# ─────────────────────────────────────────────────────────
+PATCH {{baseUrl}}/rest/user/1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "firstName": "João Atualizado",
+  "lastName": "Silva",
+  "emailAddress": "joao.novo@example.com",
+  "address": "Rua Nova 99, Lisboa"
+}

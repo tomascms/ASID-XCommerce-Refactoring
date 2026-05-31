@@ -1,0 +1,63 @@
+### XCommerce Microserviços — Inventário & Notificações
+### Todos os requests passam pelo API Gateway: http://localhost:9000
+### Estes serviços são principalmente de uso interno (chamados por outros serviços)
+### mas estão expostos para instrumentação e testes
+
+@baseUrl = http://localhost:9000
+@token = SEU_TOKEN_AQUI
+
+# ═══════════════════════════════════════════════════════════
+# INVENTÁRIO — /inventory
+# Nota: usado internamente pelo order-service via Kafka/REST
+# ═══════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────
+# GET /inventory/check  →  verificar disponibilidade de stock
+# ─────────────────────────────────────────────────────────
+GET {{baseUrl}}/inventory/check?productId=101&quantity=5
+
+###
+
+GET {{baseUrl}}/inventory/check?productId=101&quantity=100
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST /inventory/decrease  →  diminuir stock (chamado após encomenda)
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/inventory/decrease?productId=101&quantity=2
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST /inventory/sync  →  sincronizar stock manualmente
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/inventory/sync?productId=101&quantity=50
+
+###
+
+# ═══════════════════════════════════════════════════════════
+# NOTIFICAÇÕES — /notifications
+# Nota: usado internamente — consome eventos Kafka (order-placed, order-confirmed, etc.)
+# ═══════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────
+# POST /notifications/send  →  enviar notificação manualmente
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/notifications/send
+Content-Type: application/json
+
+{
+  "email": "cliente@example.com",
+  "message": "A sua encomenda #123 foi confirmada e está a ser processada."
+}
+
+###
+
+POST {{baseUrl}}/notifications/send
+Content-Type: application/json
+
+{
+  "email": "joao.silva@example.com",
+  "message": "A sua encomenda #456 foi enviada. Número de rastreio: PT123456789PT"
+}

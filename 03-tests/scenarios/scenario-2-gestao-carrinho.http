@@ -1,0 +1,134 @@
+### CENÁRIO 2 — Utilizador Registado: Gestão do Carrinho com Mudanças de Ideias
+###
+### Simula um utilizador habitual que adiciona vários produtos,
+### muda de ideias, remove uns, ajusta quantidades e finaliza.
+### Reflecte o comportamento real de browsing e indecisão.
+###
+### Executar os requests NA ORDEM indicada (1→2→3→...)
+### Gateway: http://localhost:9000
+
+@baseUrl = http://localhost:9000
+
+# ─── PASSO 1: Login ────────────────────────────────────────
+# @name loginUser
+POST {{baseUrl}}/rest/user/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+# Guardar o token da resposta
+@token = SEU_TOKEN_AQUI
+
+###
+
+# ─── PASSO 2: Ver catálogo completo ────────────────────────
+GET {{baseUrl}}/products
+
+###
+
+# ─── PASSO 3: Adicionar Produto A ao carrinho ──────────────
+POST {{baseUrl}}/rest/shoppingCart/add
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 101,
+  "quantity": 2
+}
+
+###
+
+# ─── PASSO 4: Adicionar Produto B ao carrinho ──────────────
+POST {{baseUrl}}/rest/shoppingCart/add
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 102,
+  "quantity": 1
+}
+
+###
+
+# ─── PASSO 5: Adicionar Produto C ao carrinho ──────────────
+POST {{baseUrl}}/rest/shoppingCart/add
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 103,
+  "quantity": 3
+}
+
+###
+
+# ─── PASSO 6: Rever o carrinho ─────────────────────────────
+GET {{baseUrl}}/rest/shoppingCart/get
+Authorization: Bearer {{token}}
+
+###
+
+# ─── PASSO 7: Afinal só quero 1 unidade do Produto A ───────
+PATCH {{baseUrl}}/rest/shoppingCart/decreaseProductQuantity
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 101,
+  "quantity": 1
+}
+
+###
+
+# ─── PASSO 8: Remover Produto C (mudei de ideias) ──────────
+PATCH {{baseUrl}}/rest/shoppingCart/removeProduct
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 103
+}
+
+###
+
+# ─── PASSO 9: Verificar stock do Produto B antes de aumentar ─
+GET {{baseUrl}}/inventory/check?productId=102&quantity=3
+
+###
+
+# ─── PASSO 10: Aumentar quantidade do Produto B para 3 ─────
+PATCH {{baseUrl}}/rest/shoppingCart/addProduct
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productId": 102,
+  "quantity": 2
+}
+
+###
+
+# ─── PASSO 11: Rever carrinho final antes de pagar ─────────
+GET {{baseUrl}}/rest/shoppingCart/get
+Authorization: Bearer {{token}}
+
+###
+
+# ─── PASSO 12: Fazer checkout ──────────────────────────────
+POST {{baseUrl}}/rest/order/checkout
+Authorization: Bearer {{token}}
+
+###
+
+# ─── PASSO 13: Confirmar encomenda e guardar o ID ──────────
+GET {{baseUrl}}/rest/order/list
+Authorization: Bearer {{token}}
+
+###
+
+# ─── PASSO 14: Ver detalhe da encomenda criada ─────────────
+GET {{baseUrl}}/rest/order/1
+Authorization: Bearer {{token}}

@@ -1,0 +1,76 @@
+### XCommerce Monolito — Autenticação & Utilizadores
+### Base URL: http://localhost:18080
+### Formato: Spring Security JWT HS512
+###
+### Credenciais seed (data.sql):
+###   root / root           → ROLE_SUPERADMIN
+###   user1..user50 / password → ROLE_USER  (requer: bash 04-QI/seed/seed-monolito.sh)
+
+@baseUrl = http://localhost:18080
+@token = {{login.response.body.$}}
+
+# ─────────────────────────────────────────────────────────
+# POST  /rest/user/authenticate  →  obter JWT
+# Devolve o token directamente como string (não JSON)
+# ─────────────────────────────────────────────────────────
+# @name login
+POST {{baseUrl}}/rest/user/authenticate
+Content-Type: application/json
+
+{
+  "username": "root",
+  "password": "root"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST  /rest/user  →  registar utilizador comum
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/rest/user
+Content-Type: application/json
+
+{
+  "username": "joao.silva",
+  "password": "pass1234",
+  "firstName": "João",
+  "lastName": "Silva",
+  "emailAddress": "joao.silva@example.com",
+  "address": "Rua das Flores 10, Lisboa"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# POST  /rest/user/admin  →  registar administrador (requer SUPERADMIN)
+# ─────────────────────────────────────────────────────────
+POST {{baseUrl}}/rest/user/admin
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "username": "admin2",
+  "password": "adminpass",
+  "firstName": "Maria",
+  "lastName": "Admin",
+  "emailAddress": "maria.admin@xcommerce.com",
+  "address": "Sede XCommerce, Porto"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────
+# PATCH /rest/user/{userId}  →  atualizar perfil (requer JWT)
+# ─────────────────────────────────────────────────────────
+PATCH {{baseUrl}}/rest/user/0
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "password": "root",
+  "newPassword": "root",
+  "firstName": "Root",
+  "lastName": "Root Atualizado",
+  "emailAddress": "root@local.host",
+  "address": "root address"
+}
