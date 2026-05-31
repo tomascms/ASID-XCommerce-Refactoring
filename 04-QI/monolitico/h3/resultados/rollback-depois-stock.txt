@@ -1,0 +1,6 @@
+  id  |       name        | quantity 
+------+-------------------+----------
+ 1003 | Produto Teste 1   |     1000
+ 2375 | Produto Sem Stock |        0
+(2 rows)
+

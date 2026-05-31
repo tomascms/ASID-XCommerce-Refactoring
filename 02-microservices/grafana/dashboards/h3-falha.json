@@ -1,0 +1,237 @@
+{
+  "uid": "h3-falha",
+  "title": "H3 \u2014 Falha Parcial e Consist\u00eancia",
+  "description": "Estado do sistema sob falha. Suporta H3: estado zombie, circuit breakers, lag Kafka.",
+  "tags": [
+    "xcommerce",
+    "h3",
+    "falha",
+    "consistencia"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Estado dos Servi\u00e7os (UP/DOWN)",
+      "description": "1 = UP, 0 = DOWN. Quando inventory-service for parado, deve aparecer 0.",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 4
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "up{job=\"xcommerce-microservices\"}",
+          "legendFormat": "{{ instance }}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "horizontal"
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Circuit Breaker \u2014 estado por rota (gateway)",
+      "description": "Estado do circuit breaker Resilience4j no gateway. CLOSED=normal, OPEN=a cortar pedidos, HALF_OPEN=a tentar recuperar. Durante H3, a rota do inventory deve abrir.",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "resilience4j_circuitbreaker_state{job=\"xcommerce-microservices\"}",
+          "legendFormat": "CB {{ name }} state={{ state }}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Circuit Breaker \u2014 chamadas bloqueadas (gateway)",
+      "description": "Pedidos bloqueados pelo circuit breaker e enviados para o fallback. Spike durante H3 confirma que o gateway protege os outros servi\u00e7os.",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(resilience4j_circuitbreaker_not_permitted_calls_total{job=\"xcommerce-microservices\"}[1m])",
+          "legendFormat": "bloqueadas {{ name }}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Taxa de erros HTTP \u2014 por servi\u00e7o",
+      "description": "Erros 5xx por servi\u00e7o. Durante H3 (inventory parado), o order-service pode devolver erros antes do circuit breaker abrir.",
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"xcommerce-microservices\", status=~\"5..\"}[1m])) by (instance)",
+          "legendFormat": "5xx {{ instance }}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Lat\u00eancia p95 \u2014 order-service durante falha",
+      "description": "Quando inventory-service est\u00e1 parado, o order-service aguarda timeout (5s) antes de falhar. Spike vis\u00edvel no p95.",
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(http_server_requests_seconds_sum{instance=\"order-service:8084\", uri!~\"/actuator.*\"}[1m]) / rate(http_server_requests_seconds_count{instance=\"order-service:8084\", uri!~\"/actuator.*\"}[1m]) * 1000",
+          "legendFormat": "avg order {{ uri }} (ms)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Kafka \u2014 mensagens produzidas vs consumidas (order-created-events)",
+      "description": "Quando inventory-service est\u00e1 parado, as mensagens produzidas acumulam sem ser consumidas. Lag vis\u00edvel aqui (se o Kafka expuser m\u00e9tricas via JMX exporter).",
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "kafka_consumer_fetch_manager_records_consumed_rate{job=\"xcommerce-microservices\"}",
+          "legendFormat": "consumed {{ client_id }}",
+          "refId": "A"
+        },
+        {
+          "expr": "kafka_producer_record_send_rate{job=\"xcommerce-microservices\"}",
+          "legendFormat": "produced {{ client_id }}",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Health checks \u2014 falhas por servi\u00e7o",
+      "description": "Falhas de health check reportadas pelo Spring Actuator. Complementa o painel UP/DOWN com granularidade por componente (DB, Kafka, disco).",
+      "gridPos": {
+        "x": 12,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "health_status{job=\"xcommerce-microservices\"}",
+          "legendFormat": "health {{ instance }} {{ status }}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    }
+  ]
+}

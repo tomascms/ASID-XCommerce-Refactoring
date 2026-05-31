@@ -1,0 +1,121 @@
+{
+  "uid": "h2a-latencia",
+  "title": "H2a — Latência por Serviço",
+  "tags": ["xcommerce", "h2a"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "refresh": "5s",
+  "time": { "from": "now-10m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "P1 — Latência média por serviço interno (ms)",
+      "description": "Latência média de cada serviço interno. T1=catalog /products (1 hop). T3=order /rest/order/checkout (coordena 3 hops REST). Gateway excluído — regista URIs como UNKNOWN por ser WebFlux reactivo.",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(http_server_requests_seconds_sum{instance=\"catalog-service:8082\", uri=\"/products\"}[1m]) / rate(http_server_requests_seconds_count{instance=\"catalog-service:8082\", uri=\"/products\"}[1m]) * 1000",
+          "legendFormat": "catalog /products (T1 — 1 hop)",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(http_server_requests_seconds_sum{instance=\"order-service:8084\", uri=\"/rest/order/checkout\"}[1m]) / rate(http_server_requests_seconds_count{instance=\"order-service:8084\", uri=\"/rest/order/checkout\"}[1m]) * 1000",
+          "legendFormat": "order /checkout (T3 — 3 hops REST)",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(http_server_requests_seconds_sum{instance=\"cart-service:8083\", uri=\"/rest/shoppingCart\"}[1m]) / rate(http_server_requests_seconds_count{instance=\"cart-service:8083\", uri=\"/rest/shoppingCart\"}[1m]) * 1000",
+          "legendFormat": "cart /shoppingCart (hop individual)",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } } }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "P2 — Throughput (req/s) por serviço",
+      "description": "Taxa de pedidos por segundo durante o teste k6 (10 VUs). Confirma que o tráfego chegou a cada serviço.",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"xcommerce-microservices\", uri!~\"/actuator.*\"}[1m])) by (instance)",
+          "legendFormat": "{{ instance }}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "P3 — Latência Feign Clients — chamadas REST inter-serviço do order-service",
+      "description": "Latência das chamadas REST síncronas feitas pelo order-service para cart-service e catalog-service durante o checkout. Cada barra é 1 hop.",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(http_client_requests_seconds_sum{instance=\"order-service:8084\"}[1m]) / rate(http_client_requests_seconds_count{instance=\"order-service:8084\"}[1m]) * 1000",
+          "legendFormat": "feign order→serviços",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Erros HTTP (5xx)",
+      "description": "Taxa de erros 5xx. Deve ser 0 em condições normais. Sobe durante H3 (inventory parado).",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"xcommerce-microservices\", status=~\"5..\"}[1m])) by (instance)",
+          "legendFormat": "5xx {{ instance }}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Latência avg — T1 catalog /products",
+      "description": "Valor actual da latência média do T1 (baseline 1 hop).",
+      "gridPos": { "x": 12, "y": 16, "w": 6, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(http_server_requests_seconds_sum{instance=\"catalog-service:8082\", uri=\"/products\"}[2m]) / rate(http_server_requests_seconds_count{instance=\"catalog-service:8082\", uri=\"/products\"}[2m]) * 1000",
+          "legendFormat": "avg T1 (ms)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Latência avg — T3 order /checkout",
+      "description": "Valor actual da latência média do T3 (3 hops REST síncronos).",
+      "gridPos": { "x": 18, "y": 16, "w": 6, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(http_server_requests_seconds_sum{instance=\"order-service:8084\", uri=\"/rest/order/checkout\"}[2m]) / rate(http_server_requests_seconds_count{instance=\"order-service:8084\", uri=\"/rest/order/checkout\"}[2m]) * 1000",
+          "legendFormat": "avg T3 (ms)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    }
+  ]
+}

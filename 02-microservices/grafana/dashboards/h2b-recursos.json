@@ -1,0 +1,160 @@
+{
+  "uid": "h2b-recursos",
+  "title": "H2b — Recursos em Idle (JVM + Infra)",
+  "description": "RAM e CPU por serviço JVM em idle. Suporta H4: overhead fixo da decomposição.",
+  "tags": ["xcommerce", "h2b", "recursos"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Memória JVM usada — por serviço (heap + non-heap)",
+      "description": "Memória JVM total em uso por serviço. Cada processo JVM consome ~350-450 MB em idle.",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(jvm_memory_used_bytes{job=\"xcommerce-microservices\"}) by (instance)",
+          "legendFormat": "{{ instance }}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Heap JVM usada — por serviço",
+      "description": "Memória heap em uso após GC. Linha plana em idle confirma ausência de memory leak.",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "jvm_memory_used_bytes{job=\"xcommerce-microservices\", area=\"heap\"}",
+          "legendFormat": "heap {{ instance }}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "id": 3,
+      "type": "bargauge",
+      "title": "Memória JVM total por serviço (snapshot actual)",
+      "description": "Snapshot actual do consumo total por serviço. Domina o rácio de custo micro/mono.",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(jvm_memory_used_bytes{job=\"xcommerce-microservices\"}) by (instance)",
+          "legendFormat": "{{ instance }}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 200000000 },
+              { "color": "red", "value": 400000000 }
+            ]
+          }
+        }
+      },
+      "options": { "orientation": "horizontal", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "CPU usage — por serviço JVM",
+      "description": "Uso de CPU em idle. Próximo de 0% — qualquer spike indica GC, health checks ou Kafka polling.",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "process_cpu_usage{job=\"xcommerce-microservices\"}",
+          "legendFormat": "cpu {{ instance }}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 0.1 } }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Threads JVM activas — por serviço",
+      "description": "Número de threads. Kafka consumers e connection pools mantêm threads em idle — contribuem para o overhead fixo.",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "jvm_threads_live_threads{job=\"xcommerce-microservices\"}",
+          "legendFormat": "threads {{ instance }}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Memória JVM total — SOMA de todos os serviços",
+      "description": "Total JVM microserviços. Comparar com monolito (1 JVM ≈ 827 MB). Rácio esperado: ~3-4×.",
+      "gridPos": { "x": 0, "y": 24, "w": 8, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(jvm_memory_used_bytes{job=\"xcommerce-microservices\"})",
+          "legendFormat": "Total JVM microserviços",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Nº de processos JVM a correr",
+      "description": "7 JVMs activas. Cada uma com ~396 MB de overhead fixo.",
+      "gridPos": { "x": 8, "y": 24, "w": 8, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "count(sum(jvm_memory_used_bytes{job=\"xcommerce-microservices\"}) by (instance))",
+          "legendFormat": "JVMs activas",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "GC overhead — soma",
+      "description": "Percentagem de tempo em GC. Em idle deve ser < 1%.",
+      "gridPos": { "x": 16, "y": 24, "w": 8, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "avg(jvm_gc_overhead{job=\"xcommerce-microservices\"})",
+          "legendFormat": "GC overhead avg",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    }
+  ]
+}

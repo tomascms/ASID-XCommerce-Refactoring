@@ -1,0 +1,7 @@
+=== RESULTADO H3 ROLLBACK MONOLITO ===
+ total_encomendas_depois 
+-------------------------
+                       7
+(1 row)
+
+Encomendas antes=depois=7 — rollback JPA confirmado

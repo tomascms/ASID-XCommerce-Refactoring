@@ -1,0 +1,7 @@
+=== INVENTÁRIO DEPOIS (P16) ===
+ product_id | quantity 
+------------+----------
+          2 |     1000
+          1 |     1000
+(2 rows)
+

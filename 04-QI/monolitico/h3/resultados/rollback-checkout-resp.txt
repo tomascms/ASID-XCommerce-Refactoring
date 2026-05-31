@@ -1,0 +1,2 @@
+Resposta: {"timestamp":"2026-05-31T17:08:59.169+0000","status":500,"error":"Internal Server Error","message":"Stock insuficiente para o produto 2375 (disponivel: 0, pedido: 1)","path":"/rest/order/checkout"}
+HTTP:500

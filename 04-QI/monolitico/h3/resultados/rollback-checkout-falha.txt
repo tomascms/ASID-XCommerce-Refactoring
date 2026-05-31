@@ -1,0 +1,4 @@
+=== RESPOSTA CHECKOUT FALHADO ===
+HTTP 500 — "Stock insuficiente para o produto 2375 (disponivel: 0, pedido: 1)"
+Encomendas criadas: 0 (count antes = count depois = 7)
+Stock produto 1003: inalterado (1000)
