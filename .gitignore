@@ -17,6 +17,7 @@
 SECCAO-6-AVALIACAO.md
 SECCAO-6-AVALIACAO.docx
 *.ear
+gerar_apresentacao.py
 *.zip
 *.tar.gz
 *.rar

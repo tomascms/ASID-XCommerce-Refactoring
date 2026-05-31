@@ -1,2 +1,0 @@
-Resposta: {"id":7101,"username":"user1","productId":1,"quantity":3,"orderDate":"2026-05-31T17:06:18.974043792","totalAmount":34.0,"status":"HANDLING","items":[{"productId":1,"quantity":2,"price":11.0},{"productId":2,"quantity":1,"price":12.0}]}
-HTTP:202

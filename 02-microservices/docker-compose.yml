@@ -7,8 +7,6 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=xcommerce_identity
-    volumes:
-      - ./seed/identity-seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_identity"]
       interval: 10s
@@ -23,8 +21,6 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=xcommerce_catalog
-    volumes:
-      - ./seed/catalog-seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_catalog"]
       interval: 10s
@@ -53,8 +49,6 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=xcommerce_orders
-    volumes:
-      - ./seed/orders-seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_orders"]
       interval: 10s
@@ -69,8 +63,6 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=xcommerce_inventory
-    volumes:
-      - ./seed/inventory-seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d xcommerce_inventory"]
       interval: 10s

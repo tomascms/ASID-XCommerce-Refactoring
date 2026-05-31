@@ -14,6 +14,37 @@ Cobrem H2a (latência), H2b (recursos) e H3 (falha parcial/consistência).
 
 ---
 
+## Passo 1 — Seed de dados
+
+Popula as BDs com utilizadores, produtos, stock e encomendas de teste.  
+**Executar depois de os serviços estarem healthy** (`docker compose ps`).
+
+```bash
+# Microserviços
+cd 02-microservices && docker compose up -d
+# aguardar ~2 min
+bash 04-QI/seed/seed-microservicos.sh
+
+# Monolito
+cd 01-monolith && docker compose up -d
+# aguardar healthcheck
+bash 04-QI/seed/seed-monolito.sh
+```
+
+O que é criado em cada BD:
+
+| BD | Dados |
+|----|-------|
+| xcommerce_identity | 50 utilizadores `user1`..`user50`, password = `password` |
+| xcommerce_catalog | 1 categoria + 1 marca + 20 produtos `Produto Teste 1..20` |
+| xcommerce_inventory | stock 1000 unidades para os 20 produtos |
+| xcommerce_orders | 250 encomendas CONFIRMED (5 × 50 utilizadores), 4 itens cada |
+| monolito (xcommerce) | idem — utilizadores, produtos, stock, encomendas |
+
+O seed é **idempotente**: pode ser re-executado sem erros (apaga e recria os dados de teste).
+
+---
+
 ## Passo 2 — H2a: Latência sob carga
 
 Três cenários × três níveis de carga × duas arquiteturas = 54 corridas.
