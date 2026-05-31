@@ -1,7 +1,7 @@
 === STOCK ANTES ===
-  id  |      name       | quantity 
-------+-----------------+----------
- 1003 | Produto Teste 1 |     1000
- 1004 | Produto Teste 2 |     1000
+  id  |       name        | quantity 
+------+-------------------+----------
+ 2601 | Produto Teste 1   |     1000
+ 2699 | Produto Sem Stock |        0
 (2 rows)
 

@@ -29,8 +29,9 @@ echo "container,mem_mb,cpu_pct,sample" > "$OUT_FILE"
 echo "A capturar $SAMPLES amostras de $ARQ (intervalo ${INTERVAL}s)..."
 
 for i in $(seq 1 $SAMPLES); do
-  docker stats --no-stream --format "{{.Name}},{{.MemUsage}},{{.CPUPerc}}" | while IFS=',' read -r name mem cpu; do
-    # Converter "123.4MiB / 7.77GiB" → só o primeiro número em MB
+  docker stats --no-stream --format "{{.Name}},{{.MemUsage}},{{.CPUPerc}}" \
+    $(docker ps --filter name=xcommerce- --format "{{.Names}}" | tr '\n' ' ') \
+    | while IFS=',' read -r name mem cpu; do
     mem_mb=$(echo "$mem" | awk '{
       val=$1; unit=$2
       gsub(/[^0-9.]/, "", val)

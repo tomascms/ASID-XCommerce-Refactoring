@@ -1,2 +1,6 @@
-=== RESULTADO H3 ROLLBACK MONOLITO ===
-Encomendas user1 ANTES do checkout com falha: 7
+=== ENCOMENDAS ANTES ===
+ total_encomendas_antes 
+------------------------
+                      6
+(1 row)
+

@@ -7,18 +7,47 @@
 set -euo pipefail
 
 GATEWAY="http://localhost:9000"
-DB_ORDERS_USER=postgres
-DB_ORDERS_PASS=postgres
+DB_USER=postgres
+DB_PASS=postgres
 
-USER="user1"
+TEST_USER="user1"
 PASS="password"
 # IDs fixos gerados pelo seed-microservicos.sh (Produto Teste 1=101, Produto Teste 2=102)
 PRODUCT_IDS=(101 102)
+# Construir lista separada por vírgulas para SQL
+PRODUCT_IDS_CSV=$(IFS=,; echo "${PRODUCT_IDS[*]}")
 
 OUT_DIR="$(cd "$(dirname "$0")" && pwd)/resultados"
 mkdir -p "$OUT_DIR"
 
+# Helper: corre psql num contentor, escreve para ficheiro e stdout
+psql_to_file() {
+  local container="$1" db="$2" sql="$3" file="$4" out
+  set +e
+  out=$(docker exec -e PGPASSWORD="$DB_PASS" "$container" \
+    psql -U "$DB_USER" -d "$db" -c "$sql" 2>/dev/null)
+  local rc=$?
+  set -e
+  if [ $rc -ne 0 ] || [ -z "$out" ]; then
+    out="(sem dados — BD indisponível ou vazia)"
+  fi
+  echo "$out" | tee "$file"
+}
+
 echo "=== H3 Cenário Zombie — $(date) ===" | tee "$OUT_DIR/zombie-log.txt"
+
+# 0. Garantir que inventory-service está a correr antes de começar
+INV_STATUS=$(docker inspect --format='{{.State.Health.Status}}' xcommerce-inventory-service 2>/dev/null || echo "missing")
+if [ "$INV_STATUS" != "healthy" ]; then
+  echo "inventory-service não está healthy ($INV_STATUS) — a iniciar..."
+  docker start xcommerce-inventory-service 2>/dev/null || true
+  for i in $(seq 1 15); do
+    S=$(docker inspect --format='{{.State.Health.Status}}' xcommerce-inventory-service 2>/dev/null || echo "unknown")
+    echo "  [$i] $S"
+    [ "$S" = "healthy" ] && break
+    sleep 5
+  done
+fi
 
 # 1. Verificar que inventory-service está a correr
 echo ""
@@ -27,10 +56,10 @@ docker ps --filter name=inventory-service --format "{{.Names}} — {{.Status}}" 
 
 # 2. Login
 echo ""
-echo "2. Login como $USER..."
+echo "2. Login como $TEST_USER..."
 LOGIN_RESP=$(curl -sf -X POST "$GATEWAY/rest/user/login" \
   -H 'Content-Type: application/json' \
-  -d "{\"username\":\"$USER\",\"password\":\"$PASS\"}")
+  -d "{\"username\":\"$TEST_USER\",\"password\":\"$PASS\"}")
 TOKEN=$(echo "$LOGIN_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])" 2>/dev/null || \
         echo "$LOGIN_RESP" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 echo "Token obtido: ${TOKEN:0:30}..." | tee -a "$OUT_DIR/zombie-log.txt"
@@ -49,19 +78,17 @@ for pid in "${PRODUCT_IDS[@]}"; do
 done
 echo "Carrinho reposto com produtos: ${PRODUCT_IDS[*]}" | tee -a "$OUT_DIR/zombie-log.txt"
 
-# 4. Capturar estado do inventário ANTES (via docker exec)
+# 4. Capturar estado do inventário ANTES
 echo ""
 echo "4. Stock ANTES do checkout:"
-docker exec -e PGPASSWORD="$DB_ORDERS_PASS" xcommerce-db-inventory \
-  psql -U "$DB_ORDERS_USER" -d xcommerce_inventory \
-  -c "SELECT product_id, quantity FROM inventory WHERE product_id IN (${PRODUCT_IDS[*]// /,});" \
-  2>/dev/null | tee "$OUT_DIR/zombie-inventory-antes.txt" || \
-  echo "(não foi possível ligar à BD de inventário)" | tee -a "$OUT_DIR/zombie-log.txt"
+psql_to_file "xcommerce-db-inventory" "xcommerce_inventory" \
+  "SELECT product_id, quantity FROM inventory WHERE product_id IN ($PRODUCT_IDS_CSV);" \
+  "$OUT_DIR/zombie-inventory-antes.txt"
 
 # 5. PARAR inventory-service
 echo ""
 echo "5. A parar inventory-service..."
-docker stop inventory-service 2>/dev/null || docker stop xcommerce-inventory-service 2>/dev/null
+docker stop xcommerce-inventory-service
 echo "inventory-service PARADO" | tee -a "$OUT_DIR/zombie-log.txt"
 sleep 2
 
@@ -86,45 +113,47 @@ echo ""
 echo "8. A capturar evidências..."
 
 # Estado da encomenda
-docker exec -e PGPASSWORD="$DB_ORDERS_PASS" xcommerce-db-orders \
-  psql -U "$DB_ORDERS_USER" -d xcommerce_orders \
-  -c "SELECT id, status, order_date FROM orders ORDER BY order_date DESC LIMIT 5;" \
-  2>/dev/null | tee "$OUT_DIR/zombie-orders.txt" || \
-  echo "(não foi possível ligar à BD de encomendas)" | tee -a "$OUT_DIR/zombie-log.txt"
+echo "--- Últimas encomendas:"
+psql_to_file "xcommerce-db-orders" "xcommerce_orders" \
+  "SELECT id, status, order_date FROM orders ORDER BY order_date DESC LIMIT 5;" \
+  "$OUT_DIR/zombie-orders.txt"
 
 # Estado do inventário DEPOIS
-docker exec -e PGPASSWORD="$DB_ORDERS_PASS" xcommerce-db-inventory \
-  psql -U "$DB_ORDERS_USER" -d xcommerce_inventory \
-  -c "SELECT product_id, quantity FROM inventory WHERE product_id IN (${PRODUCT_IDS[*]// /,});" \
-  2>/dev/null | tee "$OUT_DIR/zombie-inventory-depois.txt" || \
-  echo "(não foi possível ligar à BD de inventário)" | tee -a "$OUT_DIR/zombie-log.txt"
+echo "--- Stock DEPOIS:"
+psql_to_file "xcommerce-db-inventory" "xcommerce_inventory" \
+  "SELECT product_id, quantity FROM inventory WHERE product_id IN ($PRODUCT_IDS_CSV);" \
+  "$OUT_DIR/zombie-inventory-depois.txt"
 
 # Estado do carrinho
-docker exec -e PGPASSWORD="$DB_ORDERS_PASS" xcommerce-db-cart \
-  psql -U "$DB_ORDERS_USER" -d xcommerce_cart \
-  -c "SELECT * FROM cart_items WHERE username='$USER';" \
-  2>/dev/null | tee "$OUT_DIR/zombie-cart.txt" || \
-  echo "(não foi possível ligar à BD de carrinho)" | tee -a "$OUT_DIR/zombie-log.txt"
+echo "--- Carrinho:"
+psql_to_file "xcommerce-db-cart" "xcommerce_cart" \
+  "SELECT username, product_id, quantity FROM cart_items WHERE username='$TEST_USER';" \
+  "$OUT_DIR/zombie-cart.txt"
 
-# Lag do tópico Kafka
+# Lag do tópico Kafka (binário sem extensão na imagem Confluent)
 echo ""
 echo "Lag do consumer group inventory-group:"
-docker exec xcommerce-kafka kafka-consumer-groups.sh \
+docker exec xcommerce-kafka kafka-consumer-groups \
   --bootstrap-server localhost:9092 \
   --describe --group inventory-group \
-  2>/dev/null | tee "$OUT_DIR/zombie-kafka-lag.txt" || \
-  echo "(não foi possível consultar Kafka consumer groups)" | tee -a "$OUT_DIR/zombie-log.txt"
+  2>/dev/null | tee "$OUT_DIR/zombie-kafka-lag.txt" \
+  || echo "(não foi possível consultar Kafka)" | tee -a "$OUT_DIR/zombie-log.txt"
 
 # 9. Resumo
 echo ""
 echo "=== RESUMO ==="
 echo "Encomenda esperada: CONFIRMED | Observada:"
-grep -i "handling\|confirmed\|cancelled" "$OUT_DIR/zombie-orders.txt" 2>/dev/null || echo "(verificar zombie-orders.txt)"
+grep -i "handling\|confirmed\|cancelled" "$OUT_DIR/zombie-orders.txt" 2>/dev/null \
+  || echo "(verificar zombie-orders.txt)"
 echo ""
 echo "Inventário alterado?"
-diff "$OUT_DIR/zombie-inventory-antes.txt" "$OUT_DIR/zombie-inventory-depois.txt" 2>/dev/null && \
-  echo "SEM alteração (confirma H3)" || echo "COM alteração (inesperado)"
+if diff -q "$OUT_DIR/zombie-inventory-antes.txt" "$OUT_DIR/zombie-inventory-depois.txt" > /dev/null 2>&1; then
+  echo "SEM alteração — stock inalterado (confirma H3)"
+else
+  echo "COM alteração (inesperado)"
+  diff "$OUT_DIR/zombie-inventory-antes.txt" "$OUT_DIR/zombie-inventory-depois.txt"
+fi
 echo ""
 echo "Evidências em: $OUT_DIR"
 echo ""
-echo "NOTA: Reiniciar inventory-service manualmente: docker start inventory-service"
+echo "NOTA: Reiniciar inventory-service: docker start xcommerce-inventory-service"

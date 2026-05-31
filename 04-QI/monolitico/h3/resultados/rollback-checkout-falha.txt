@@ -1,4 +1,2 @@
 === RESPOSTA CHECKOUT FALHADO ===
-HTTP 500 — "Stock insuficiente para o produto 2375 (disponivel: 0, pedido: 1)"
-Encomendas criadas: 0 (count antes = count depois = 7)
-Stock produto 1003: inalterado (1000)
+HTTP 500 — {"timestamp":"2026-05-31T22:52:28.636+0000","status":500,"error":"Internal Server Error","message":"Stock insuficiente para o produto 2699 (disponivel: 0, pedido: 1)","path":"/rest/order/checkout"}

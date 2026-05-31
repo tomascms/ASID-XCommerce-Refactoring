@@ -1,0 +1,1 @@
+Carrinho após checkout falhado: {"selectedProducts":{"ma.aui.sse.it.xcommerce.monolithic.data.entities.Product@a8b":1,"ma.aui.sse.it.xcommerce.monolithic.data.entities.Product@a29":1},"productsTotalPrice":21.0,"shippingCost":100.0,"empty":false,"totalPrice":146.0}
