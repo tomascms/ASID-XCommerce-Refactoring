@@ -38,6 +38,8 @@ echo "BD acessível."
 echo ""
 echo "1/4 users — a criar 50 utilizadores..."
 psql_exec <<'SQL'
+DELETE FROM order_line WHERE order_id IN (SELECT id FROM "order" WHERE user_id IN (SELECT id FROM "user" WHERE username LIKE 'user%'));
+DELETE FROM "order" WHERE user_id IN (SELECT id FROM "user" WHERE username LIKE 'user%');
 DELETE FROM authority WHERE username LIKE 'user%';
 DELETE FROM "user" WHERE username LIKE 'user%';
 
@@ -104,17 +106,18 @@ SELECT
   u.id,
   100.00,
   10.00,
-  'HANDLING',
+  0,   -- ordinal de HANDLING (0=HANDLING, 1=SHIPPED, 2=DELIVERED, 3=ONHOLD, 4=CANCELED)
   true
 FROM (SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn FROM "user" WHERE username LIKE 'user%') u,
      generate_series(1, 5) AS o;
 
-INSERT INTO order_line (id, order_id, product_id, quantity, unit_price, active)
+INSERT INTO order_line (id, order_id, product_id, quantity, discount, unit_price, active)
 SELECT
   4000 + (((ord.rn - 1) * 4) + p),
   ord.id,
   2601,
   1,
+  0.0,
   11.00,
   true
 FROM (SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn FROM "order" WHERE id >= 3000) ord,

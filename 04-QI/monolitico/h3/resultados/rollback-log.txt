@@ -1,0 +1,7 @@
+=== H3 Rollback Monolito — Sun May 31 23:52:28 WEST 2026 ===
+Token obtido: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUz...
+Carrinho: produto 2601 (stock OK) + 2699 (stock=0)
+HTTP: 500
+Resposta: {"timestamp":"2026-05-31T22:52:28.636+0000","status":500,"error":"Internal Server Error","message":"Stock insuficiente para o produto 2699 (disponivel: 0, pedido: 1)","path":"/rest/order/checkout"}
+Encomendas antes=1 | depois=1
+IGUAL — rollback JPA confirmado (H3)
