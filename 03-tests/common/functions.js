@@ -21,16 +21,18 @@ export function getAuthToken() {
 
   const payload = JSON.stringify(authData);
 
-  const res = http.post(loginUrl, payload, params); // Pass the stringified payload
+  const res = http.post(loginUrl, payload, params);
 
   if (res.status === 200) {
     try {
-      return res.body;
+      const data = JSON.parse(res.body);
+      if (data && typeof data === 'object' && data.token) {
+        return data.token;
+      }
     } catch (e) {
-      console.error(`[ERROR] Failed to parse authentication response body: ${e.message}`);
-      console.error(`[ERROR] Response body was: ${res.body}`);
-      return null;
+      // Not a JSON or doesn't match the expected structure, return as raw string
     }
+    return res.body;
   } else {
       console.error(`Authentication failed! Status: ${res.status}`);
       console.error(`Response Body: ${res.body}`);

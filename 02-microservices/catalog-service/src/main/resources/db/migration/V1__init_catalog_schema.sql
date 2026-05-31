@@ -1,7 +1,3 @@
--- Catalog Service Database Schema Migration
--- Migration: V1__init_catalog_schema.sql
--- Purpose: Initialize product catalog tables
-
 CREATE TABLE IF NOT EXISTS categories (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
